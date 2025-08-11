@@ -40,6 +40,15 @@
 - a11y-smoke（アクセシビリティ簡易チェック: axe/Playwright-axe）
 - bundle-size（web バンドル予算チェック）
 
+スクリプト（package.json）の想定名
+- 共通: `lint`, `format:check`, `typecheck`
+- 単体: `test:unit:web`, `test:unit:api`
+- ビルド: `build:web`, `build:api`
+- 統合: `test:integration:api`
+- E2E: `test:e2e`
+- ドキュメント: `md:lint`, `md:links`
+各リポジトリ構成に合わせて実体を実装してください（モノレポの場合は `-w web` や `--filter web` などでスコープ）。
+
 ## 3. 必須チェック（ブランチ保護に設定）
 - lint
 - typecheck
@@ -52,16 +61,22 @@
 
 GitHub の Settings → Branches → Branch protection rules で上記を Required status checks として登録してください。
 
-## 4. 実行トリガと分岐
+## 4. 実行トリガと分岐（ラベル制御・paths フィルタ）
 - pull_request: デフォルト（from fork を含む）
 - push: main / develop
 - path フィルタ例
   - docs のみ変更: unit/build のみ実行、integration/E2E をスキップ
   - api 配下のみ: web 関連の unit/build をスキップ
 - ラベル制御（メンテナが付与）
-  - docs-only: integration/E2E をスキップ
-  - run-e2e: 常に E2E を実行
-  - skip-e2e: 明示スキップ（緊急対応用。濫用禁止）
+  - run-e2e: E2E を実行（デフォルトは実行しない）
+  - skip-e2e: E2E を明示スキップ（緊急対応用。濫用禁止）
+  - docs-only: 手動指定は不要（paths フィルタで自動判定）
+
+実装済みワークフロー
+- `.github/workflows/pr-checks.yml`
+  - `changes` ジョブで paths フィルタとラベル/フォーク判定を行い、各ジョブの実行条件に反映
+  - `markdown` は docs 変更時のみ、その他は docs-only でない場合に実行
+  - `integration-api` はフォーク PR では不実行、`e2e` は `run-e2e` ラベルが付与されたときのみ実行
 
 ## 5. 実行環境・キャッシュ・アーティファクト
 - ランナー: ubuntu-latest（Node.js 20）

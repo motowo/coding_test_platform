@@ -89,7 +89,21 @@
 - PR: `lint` → `typecheck` → `unit` → `integration`（必要時）→ `build`
 - main/develop: 上記に加え `docker build`、プレビュー/ステージングへの自動デプロイ
 - ブランチ保護: PR レビュー必須、必須チェック通過、直 push 禁止
- - 詳細: PR 自動チェックの運用は `docs/pr_auto_checks.md` を参照（必須/条件付きチェック、ラベル運用、ブランチ保護）
+- 詳細: PR 自動チェックの運用は `docs/pr_auto_checks.md` を参照（必須/条件付きチェック、ラベル運用、ブランチ保護）
+
+### 8.1 ラベル運用（Actions制御）
+- `run-e2e`: E2E を実行（デフォルトは実行しない）
+- `skip-e2e`: E2E を明示スキップ（緊急対応用）
+- `docs-only`: 手動付与は不要（paths フィルタで自動判定）
+
+### 8.2 想定スクリプト（package.json）
+- 共通: `lint`, `format:check`, `typecheck`
+- 単体: `test:unit:web`, `test:unit:api`
+- ビルド: `build:web`, `build:api`
+- 統合: `test:integration:api`
+- E2E: `test:e2e`
+- ドキュメント: `md:lint`, `md:links`
+（モノレポの場合は各ワークスペースに合わせて filter/workspace 指定を実装）
 
 ## 9. リリース/バージョニング
 - SemVer に準拠（MVP 期間は 0.y.z を想定）
