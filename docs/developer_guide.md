@@ -111,6 +111,7 @@
 - main/develop: 上記に加え `docker build`、プレビュー/ステージングへの自動デプロイ
 - ブランチ保護: PR レビュー必須、必須チェック通過、直 push 禁止
 - 詳細: PR 自動チェックの運用は `docs/pr_auto_checks.md` を参照（必須/条件付きチェック、ラベル運用、ブランチ保護）
+ - 期待スクリプト定義の例は `docs/package_scripts_guide.md` を参照
 
 ### 8.1 ラベル運用（Actions制御）
 - `run-e2e`: E2E を実行（デフォルトは実行しない）

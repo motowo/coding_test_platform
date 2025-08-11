@@ -79,6 +79,7 @@ GitHub の Settings → Branches → Branch protection rules で上記を Requir
   - `changes` ジョブで paths フィルタとラベル/フォーク判定を行い、各ジョブの実行条件に反映
   - `markdown` は docs 変更時のみ、その他は docs-only でない場合に実行
   - `integration-api` はフォーク PR では不実行、`e2e` は `run-e2e` ラベルが付与されたときのみ実行
+  - 期待スクリプト名の詳細は `docs/package_scripts_guide.md` を参照
 
 ## 5. 実行環境・キャッシュ・アーティファクト
 - ランナー: ubuntu-latest（Node.js 20）
