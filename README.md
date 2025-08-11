@@ -19,10 +19,12 @@
 - 開発者マニュアル: `docs/developer_guide.md`
  - 開発開始からローカル実行、テスト、レビュー、CI/CD、リリース手順まで
   - TDD方針（RED→GREEN→REFACTOR）とテスト設計の指針を明記
- - PR 自動チェック: `docs/pr_auto_checks.md`
-   - 必須チェック、条件付きチェック、ブランチ保護/ラベル運用
- - スクリプト定義の例: `docs/package_scripts_guide.md`
-   - 単一/モノレポ構成の `package.json` スクリプト例（CIジョブと対応）
+- PR 自動チェック: `docs/pr_auto_checks.md`
+  - 必須チェック、条件付きチェック、ブランチ保護/ラベル運用
+- スクリプト定義の例: `docs/package_scripts_guide.md`
+  - 単一/モノレポ構成の `package.json` スクリプト例（CIジョブと対応）
+ - テスト戦略: `docs/testing_strategy.md`
+   - ツール選定（Vitest/MSW/Testcontainers/Playwright）、TDD、E2EとMCP分離設計、データ/安定性方針
 - 開発タスク: `docs/tasks.md`
   - エピック/ユーザーストーリー、優先度、受入基準（DoD）、見積り、リスク/ブロッカー
 

@@ -62,7 +62,8 @@
   - `pnpm lint` / `pnpm format:check`
   - `pnpm typecheck`
   - `pnpm test` / `pnpm test:unit` / `pnpm test:integration` / `pnpm test:e2e`
-  - `pnpm coverage`
+- `pnpm coverage`
+\n+補足: 詳細なテスト戦略・ツール/フローは `docs/testing_strategy.md` を参照。
 
 ### 5.1 TDD（テスト駆動開発）のアプローチ
 - 採用方針: 本プロジェクトは原則 TDD を採用し、RED → GREEN → REFACTOR の短いサイクルで実装を進める。
