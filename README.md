@@ -16,6 +16,8 @@
 - 技術設計書: `docs/design.md`
   - 全体アーキテクチャ、技術スタック、データモデル、API、画面定義、セキュリティ/性能設計、技術選定の過程と候補比較、UIデザインシステム（トークン）
   - 付録: フロントエンド運用ガイドは `docs/frontend_style_guide.md`
+- 開発者マニュアル: `docs/developer_guide.md`
+  - 開発開始からローカル実行、テスト、レビュー、CI/CD、リリース手順まで
 - 開発タスク: `docs/tasks.md`
   - エピック/ユーザーストーリー、優先度、受入基準（DoD）、見積り、リスク/ブロッカー
 
@@ -53,6 +55,7 @@
 - API/データモデル/画面: `docs/design.md`
 - 実装・検証に落とし込む手順: `docs/tasks.md`
 - デザインシステム/トークン: `docs/design.md` の「4.2. UIデザインシステム（トークン）」
- - フロントエンド スタイルガイド（Next.js/Tailwind/cva）: `docs/frontend_style_guide.md`
+- フロントエンド スタイルガイド（Next.js/Tailwind/cva）: `docs/frontend_style_guide.md`
+ - 開発フロー/レビュー/テスト: `docs/developer_guide.md`
 
 ご不明点や矛盾点がある場合は、`AGENTS.md` の方針に沿って合意形成のための質問を行ってください。
