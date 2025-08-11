@@ -64,6 +64,27 @@
   - `pnpm test` / `pnpm test:unit` / `pnpm test:integration` / `pnpm test:e2e`
   - `pnpm coverage`
 
+### 5.1 TDD（テスト駆動開発）のアプローチ
+- 採用方針: 本プロジェクトは原則 TDD を採用し、RED → GREEN → REFACTOR の短いサイクルで実装を進める。
+- サイクル
+  - RED: 受入基準（Given-When-Then）に基づく失敗するテストを先に書く
+  - GREEN: 最小の実装でテストを通す（過剰実装を避ける）
+  - REFACTOR: 重複排除・命名/抽象度の整合・パフォーマンス小改善（テストは常に緑）
+- レベル別のTDD適用
+  - 単体（FE/BE）: ピュアロジック/ビューの振る舞い、バリデーション、シリアライゼーション
+  - 結合/統合（BE）: ハンドラ〜DB/Redis の協調（testcontainers 等）
+  - 受入（E2E）: ユーザーストーリー単位の主要フロー（最小限）
+- 成果物
+  - 各PRで新規/変更仕様に対応するテストの追加を必須（REDから開始）
+  - カバレッジはメトリクスとして監視（質を優先し盲目的な100%は目指さない）
+
+### 5.2 TDD のメリット/採用理由
+- 仕様の明確化: 期待振る舞い（受入基準）が先に固定され、手戻りを削減
+- 設計品質の向上: 小さな単位への分解、疎結合・高凝集が促される
+- 回帰防止: 変更時の安全網として自動テストが機能
+- ドキュメント性: テストが実行可能な仕様書として機能し、引継ぎ容易
+- 速度の最適化: 無駄な実装や過剰設計を防ぎ、MVP到達までの時間を短縮
+
 ## 6. Lint/Format/型チェック
 - ESLint + Prettier を採用。プロジェクト共通ルールを設定。
 - Pre-commit フック（husky + lint-staged）
@@ -104,6 +125,19 @@
 - E2E: `test:e2e`
 - ドキュメント: `md:lint`, `md:links`
 （モノレポの場合は各ワークスペースに合わせて filter/workspace 指定を実装）
+
+### 8.3 スクリプト雛形（ガイド）
+- 目的: CI のジョブ名と 1:1 で対応するスクリプトを用意し、ローカルとCIの乖離をなくす
+- モノレポ例（概念）
+  - web: lint/typecheck/test/build を `pnpm --filter web <script>` でスコープ
+  - api: 同上 `--filter api`
+- シングルリポ例（概念）
+  - `lint`: `eslint .`
+  - `format:check`: `prettier -c .`
+  - `typecheck`: `tsc -p tsconfig.json --noEmit`
+  - `test:unit:web` / `test:unit:api`: フレームワークに合わせて対象を絞り込む
+  - `build:web` / `build:api`: それぞれのビルドコマンドを登録
+  - `md:lint` / `md:links`: markdownlint / link-checker を呼び出す
 
 ## 9. リリース/バージョニング
 - SemVer に準拠（MVP 期間は 0.y.z を想定）

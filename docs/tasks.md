@@ -6,6 +6,7 @@
     *   開発環境、CI/CDパイプラインのセットアップ
     *   ユーザー認証・認可機能の実装
     *   主要なマイクロサービスの雛形作成
+    *   テスト基盤整備（Unit/Integration/E2E）と最小カバレッジ基準（目安80%）の設定
 2.  **M2: MVPコア機能開発 (Sprint 3-4)**
     *   問題管理（作成・編集・閲覧）機能の実装
     *   コード提出・自動採点機能の実装
@@ -37,20 +38,21 @@
 | T-019 | Tailwind テーマにデザイントークンをマッピング（CSS変数参照） | P1 | ToDo |
 | T-028 | ライト/ダークテーマ切替の実装（`data-theme` 切替と永続化） | P2 | ToDo |
 | T-029 | UIプリミティブの作成（Button/Input/Card/Dialog）とトークン適用 | P1 | ToDo |
+| T-030 | **Testing**: TDD ガイドラインに沿ったテスト基盤（FE/BE）とスクリプト整備 | P1 | ToDo |
 
 ### Epic: ユーザー管理機能 (M1)
 | ID | タスク | 優先度 | 状態 |
 | :--- | :--- | :--- | :--- |
-| T-012 | Userサービス: DBスキーマ設計とマイグレーション | P1 | ToDo |
-| T-013 | Userサービス: ユーザー登録APIの実装 | P1 | ToDo |
-| T-014 | Userサービス: ログインAPIとJWT発行機能の実装 | P1 | ToDo |
-| T-015 | フロントエンド: ログイン・新規登録画面の実装 | P2 | ToDo |
+| T-012 | Userサービス: DBスキーマ設計とマイグレーション（TDDで単体/結合テスト作成） | P1 | ToDo |
+| T-013 | Userサービス: ユーザー登録APIの実装（先に失敗テスト→最小実装→リファクタ） | P1 | ToDo |
+| T-014 | Userサービス: ログインAPIとJWT発行機能の実装（TDD、失敗ケース含む） | P1 | ToDo |
+| T-015 | フロントエンド: ログイン・新規登録画面の実装（Testing LibraryでUI振る舞いのTDD） | P2 | ToDo |
 
 ### Epic: 問題管理機能 (M2)
 | ID | タスク | 優先度 | 状態 |
 | :--- | :--- | :--- | :--- |
 | T-020 | **Backend**: `PROBLEMS`, `TEST_CASES` のDBスキーマ設計とマイグレーション更新 | P1 | ToDo |
-| T-021 | **Backend**: 問題作成API (`POST /api/v1/problems`) の実装 (バリデーション含む) | P1 | ToDo |
+| T-021 | **Backend**: 問題作成API (`POST /api/v1/problems`) の実装 (バリデーション含む, TDD) | P1 | ToDo |
 | T-022 | **Backend**: 問題更新API (`PUT /api/v1/problems/:id`) の実装 | P1 | ToDo |
 | T-023 | **Backend**: 問題一覧・詳細取得API (`GET`) の実装 | P1 | ToDo |
 | T-024 | **Frontend**: 問題作成・編集ページのUI実装 | P1 | ToDo |
@@ -65,7 +67,7 @@
 | T-031 | **Backend**: コード任意実行API (`POST /api/v1/execute`) の実装 | P1 | ToDo |
 | T-032 | **Backend**: コード提出API (`POST /api/v1/submissions`) の実装 | P1 | ToDo |
 | T-033 | Scoringサービス: 採点ロジックの実装 | P1 | ToDo |
-| T-034 | **Frontend**: テスト受験画面の3ペインレイアウト実装 | P1 | ToDo |
+| T-034 | **Frontend**: テスト受験画面の3ペインレイアウト実装（UI/TDD＋主要フローのE2E） | P1 | ToDo |
 
 ### Epic: アセスメント機能 (M3)
 | ID | タスク | 優先度 | 状態 |

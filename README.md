@@ -18,8 +18,9 @@
   - 付録: フロントエンド運用ガイドは `docs/frontend_style_guide.md`
 - 開発者マニュアル: `docs/developer_guide.md`
   - 開発開始からローカル実行、テスト、レビュー、CI/CD、リリース手順まで
- - PR 自動チェック: `docs/pr_auto_checks.md`
-   - 必須チェック、条件付きチェック、ブランチ保護/ラベル運用
+  - TDD方針（RED→GREEN→REFACTOR）とテスト設計の指針を明記
+- PR 自動チェック: `docs/pr_auto_checks.md`
+  - 必須チェック、条件付きチェック、ブランチ保護/ラベル運用
 - 開発タスク: `docs/tasks.md`
   - エピック/ユーザーストーリー、優先度、受入基準（DoD）、見積り、リスク/ブロッカー
 
