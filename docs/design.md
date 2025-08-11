@@ -229,6 +229,7 @@ erDiagram
 | 6 | `author_id` | 作成者ID | INTEGER | FK (USERS) | 問題を作成したユーザーのID |
 | 7 | `created_at` | 作成日時 | TIMESTAMP | NOT NULL | レコード作成日時 |
 | 8 | `updated_at` | 更新日時 | TIMESTAMP | NOT NULL | レコード更新日時 |
+| 9 | `estimated_time_minutes` | 想定解答時間(分) | INTEGER | | 問題を解くのにかかると想定される時間（5分単位） |
 
 #### **TEST_CASES (テストケース)**
 各問題に紐づくテストケースを格納する。
@@ -265,6 +266,8 @@ erDiagram
 | 5 | `created_by` | 作成者ID | INTEGER | NOT NULL, FK (USERS) | アセスメントを作成したユーザーのID |
 | 6 | `created_at` | 作成日時 | TIMESTAMP | NOT NULL | レコード作成日時 |
 | 7 | `updated_at` | 更新日時 | TIMESTAMP | NOT NULL | レコード更新日時 |
+| 8 | `pre_assessment_guide` | 開始前案内文 | TEXT | | 受験開始前に表示される注意事項など |
+| 9 | `post_assessment_guide` | 終了後案内文 | TEXT | | 受験完了後に表示されるメッセージなど |
 
 #### **ASSESSMENT_PROBLEMS (アセスメント問題関連)**
 アセスメントと問題の多対多の関連を定義する。
@@ -363,11 +366,13 @@ stateDiagram-v2
     *   問題のタイトル、説明（Markdown）、難易度、カテゴリなどを入力。
     *   テストケース（入力、期待される出力）を複数設定。
     *   言語ごとのコードテンプレートを登録。
+    *   **想定解答時間を5分単位で設定するための入力フィールド（ドロップダウン等）を追加。**
 
 2.  **アセスメント作成/編集画面**:
     *   アセスメント名、説明、制限時間を設定。
     *   登録済みの問題ライブラリから問題を選択して追加。
     *   ドラッグ＆ドロップで問題の順序を変更。
+    *   **開始前案内文と終了後案内文を編集するためのMarkdownエディタを追加。**
 
 3.  **アセスメント割当画面**:
     *   受験者（候補者）を選択。
