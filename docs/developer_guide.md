@@ -89,6 +89,7 @@
 - PR: `lint` → `typecheck` → `unit` → `integration`（必要時）→ `build`
 - main/develop: 上記に加え `docker build`、プレビュー/ステージングへの自動デプロイ
 - ブランチ保護: PR レビュー必須、必須チェック通過、直 push 禁止
+ - 詳細: PR 自動チェックの運用は `docs/pr_auto_checks.md` を参照（必須/条件付きチェック、ラベル運用、ブランチ保護）
 
 ## 9. リリース/バージョニング
 - SemVer に準拠（MVP 期間は 0.y.z を想定）

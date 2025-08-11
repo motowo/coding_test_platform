@@ -18,6 +18,8 @@
   - 付録: フロントエンド運用ガイドは `docs/frontend_style_guide.md`
 - 開発者マニュアル: `docs/developer_guide.md`
   - 開発開始からローカル実行、テスト、レビュー、CI/CD、リリース手順まで
+ - PR 自動チェック: `docs/pr_auto_checks.md`
+   - 必須チェック、条件付きチェック、ブランチ保護/ラベル運用
 - 開発タスク: `docs/tasks.md`
   - エピック/ユーザーストーリー、優先度、受入基準（DoD）、見積り、リスク/ブロッカー
 
@@ -56,6 +58,7 @@
 - 実装・検証に落とし込む手順: `docs/tasks.md`
 - デザインシステム/トークン: `docs/design.md` の「4.2. UIデザインシステム（トークン）」
 - フロントエンド スタイルガイド（Next.js/Tailwind/cva）: `docs/frontend_style_guide.md`
- - 開発フロー/レビュー/テスト: `docs/developer_guide.md`
+- 開発フロー/レビュー/テスト: `docs/developer_guide.md`
+ - PR 自動チェック運用: `docs/pr_auto_checks.md`
 
 ご不明点や矛盾点がある場合は、`AGENTS.md` の方針に沿って合意形成のための質問を行ってください。
