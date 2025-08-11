@@ -26,7 +26,7 @@
 ```mermaid
 graph TD
     subgraph "ユーザー"
-        A["ブラウザ (SvelteKit)"]
+        A["ブラウザ (Next.js)"]
     end
 
     subgraph "インフラストラクチャ (AWS/GCP)"
@@ -67,7 +67,7 @@ graph TD
 
 | コンポーネント | 説明 |
 | :--- | :--- |
-| **ブラウザ (SvelteKit)** | 軽量なフレームワークSvelteKitを使用し、リアクティブで高速なUIを提供する。 |
+| **ブラウザ (Next.js)** | ReactベースのNext.jsを使用し、SSR/SSG/ISRおよびRSCを活用した拡張性・保守性の高いUIを提供する。 |
 | **API Gateway / Ingress** | 全てのリクエストの窓口。認証、ルーティング、レートリミット等を担当。KubernetesのIngress Controllerと連携する。 |
 | **User Service** | ユーザー情報の管理、認証、権限管理を行う。k8s上のPodとしてデプロイされる。 |
 | **Problem Service** | コーディング問題、テストケース、カテゴリ、難易度の管理を行う。k8s上のPodとしてデプロイされる。 |
@@ -84,12 +84,120 @@ graph TD
 
 | 領域 | 技術 | 理由 |
 | :--- | :--- | :--- |
-| **フロントエンド** | SvelteKit, TypeScript | 高速な動作と、コンパイル時の型チェックによる堅牢性を両立するため。 |
+| **フロントエンド** | Next.js (React), TypeScript | 長期運用での人材確保/学習コスト低減、SSR/ISR/RSCなど運用選択肢の広さ、豊富なエコシステムのため。 |
 | **バックエンド (API)** | Node.js, Fastify, TypeScript | 軽量で高速なWebフレームワークと型システムにより、生産性とパフォーマンスを両立するため。 |
 | **データベース** | PostgreSQL, Redis | 堅牢なリレーショナルDBと、高速なインメモリDBを特性に応じて使い分けるため。 |
 | **コンテナ技術** | Docker, **Kubernetes** | セキュアなコード実行環境と、宣言的なデプロイ、自己修復、水平スケーリングを実現するため。 |
 | **インフラ** | AWS / GCP | マネージドサービス（EKS, RDS, ElastiCache等）を活用し、運用負荷を軽減するため。 |
 | **イベント基盤** | Apache Kafka / AWS Kinesis | 非同期処理とデータ分析基盤への連携を実現するため。 |
+
+### 2.1. 技術選定の過程（判断基準）
+
+本プロジェクトの選定は、以下の基準を用いて候補技術を比較・評価した。
+
+- 開発速度: MVP到達までの実装効率、足回りの整備コスト
+- パフォーマンス: 要件の応答SLO（実行3秒平均、採点P95=15秒）を満たせるか
+- セキュリティ/隔離性: コンテナ実行、権限分離、依存の健全性
+- 型安全性/テスト容易性: 型システム、テスト支援、エラー処理のしやすさ
+- エコシステム/採用市場: ライブラリ・プラグインの豊富さ、学習コスト、採用容易性
+- 運用容易性: マネージドサービス親和性、デプロイ/監視、スケール戦略
+
+### 2.2. フロントエンド候補比較
+
+- Next.js (React) + TypeScript（採用）
+  - 長所: 圧倒的なエコシステム、学習コストの低さ、人材確保の容易さ。App Router/Server Components/ISRなど運用選択肢が広い。Monaco/Prism等の統合事例が豊富。
+  - 短所: 抽象の層が厚く、MVPではオーバーヘッドが出る場面がある。ベストプラクティスの変遷に追随が必要。
+
+- SvelteKit + TypeScript（代替候補）
+  - 長所: ランタイム軽量・高速、直感的な記法、Viteベースの高いDX。
+  - 短所: React系に比べコミュニティ規模が小さく、エンジニアのローテーション時のスイッチングコストが相対的に高い。
+
+- Nuxt (Vue) + TypeScript
+  - 長所: 学習曲線が緩やか、公式モジュールが充実、SSRに強い。
+  - 短所: 大規模状態管理や厳密な型運用では工夫が必要な場面あり。
+
+- Angular
+  - 長所: フルスタックなフレームワーク（ルーター/DI/フォーム）で規約が強く大規模で安定。
+  - 短所: 学習コストが高め、MVPでは過剰になりやすい。
+
+- Remix / Astro など
+  - Remix: Web標準志向で美しいが、IDE的UI（エディタ/ランタイム連携）には追加設計が必要。
+  - Astro: アイランズ構成に強いが、インタラクティブなアプリ本体には追加の選定が伴う。
+
+結論（FE）: 長期運用・人員ローテーションに伴うスイッチングコスト最小化の観点から Next.js + TypeScript を採用。SvelteKitはパフォーマンス/記述性の観点で有力な代替候補とする。
+
+### 2.3. バックエンド候補比較
+
+- Node.js + Fastify + TypeScript（採用）
+  - 長所: 高速・軽量、プラグイン設計、型による安全性。OpenAPI、認証、バリデーションの整備も容易。
+  - 短所: 規約が緩く、チーム規模拡大時はアーキテクチャの明文化が必要。
+
+- NestJS + TypeScript（代替第一候補）
+  - 長所: DI/モジュール/デコレータで規約が明確。大規模開発・テスト容易性・レイヤ分離が得意。
+  - 短所: ランタイム/抽象のオーバーヘッド、メタプログラミングの学習コスト。
+
+- Express + TypeScript
+  - 長所: 学習容易・資料が豊富。
+  - 短所: パフォーマンス/型安全/プラグインの近代性で Fastify/Nest に劣る。
+
+- Go (Gin/Fiber 等)
+  - 長所: 高性能・低フットプリント、並行処理が容易。採点ワーカーの制御プレーンにも適性。
+  - 短所: ジェネリクスやエコシステムの面で型安全なDXはTSほどではない。チームスキル前提。
+
+- Python (FastAPI)
+  - 長所: 可読性・ML連携の親和性。将来の問題自動生成などと親和。
+  - 短所: スループット/同時実行で工夫が必要（非同期運用やスケール前提）。
+
+- Rust (Axum/Actix)
+  - 長所: 型安全性と最高水準の性能。採点ワーカーの高負荷用途に適性。
+  - 短所: 学習コストが高く、MVPの速度は犠牲になりがち。
+
+- Java (Spring Boot) / Elixir (Phoenix) など
+  - 長所: 企業向け/リアルタイム指向など領域特化の強み。
+  - 短所: チームスキル/運用前提を満たす必要あり。
+
+結論（BE）:
+- API面は「Node.js + Fastify + TypeScript」を推奨。チーム規模拡大やモノレポ管理が前提なら「NestJS」を選択肢とする。
+- 採点ワーカーはポリグロットを許容: APIはNodeで維持しつつ、CPU/隔離要件が強ければワーカーをGo/Rustで実装する構成も適合。
+
+### 2.4. 選定結果と却下理由（ADR要約）
+
+- 採用: FE=SvelteKit(+TS), BE API=Fastify(+TS), 採点=K8s Job（ワーカー言語は将来選択可）
+- 採用: FE=Next.js(+TS), BE API=Fastify(+TS), 採点=K8s Job（ワーカー言語は将来選択可）
+- 却下（MVP段階）:
+  - Angular/Spring Boot: 速度と過剰性の観点でMVPには重い
+  - Rust全面採用: 学習コスト→納期リスクが高い
+  - Python全面採用: 採点SLOとスループット達成に追加スケーリングが前提
+  - サーバレス完全分割: 採点の状態管理/ジョブ実行と相性課題（検証コスト高）
+
+影響/トレードオフ:
+- 現行選定はDXと速度を優先。将来の高負荷に対しては、採点ワーカーをGo/Rustへ脱着可能とすることでリスクを低減。
+- モノリス→マイクロサービスの移行は、Fastify構成でもモジュラリティを維持しておくことで段階的に対応可能。
+
+### 2.5. フロントエンドCSS戦略の比較と選定
+
+判断基準: 一貫性（デザインシステム適用容易性）、アクセシビリティ、保守性（命名/スコープ管理）、学習/引継ぎコスト、パフォーマンス、エコシステム。
+
+- Tailwind CSS（採用）
+  - 長所: ユーティリティ主導で命名の迷いを排除、デザイントークンを `tailwind.config` とCSS変数で集中管理、ダークモード/レスポンシブ/状態バリアントが標準化。採用実績と人材プールが大きい。
+  - 短所: クラス肥大化の見通しに注意（`clsx`/`cva` 等の補助とコンポーネント分割で緩和）。
+
+- CSS Modules + PostCSS
+  - 長所: 依存軽量、既存CSS資産の取り込み容易。
+  - 短所: 命名規約と設計原則（BEM等）の徹底が必要で、チームローテーション時にブレやすい。
+
+- UIライブラリ（Chakra UI / MUI / Mantine など）
+  - 長所: コンポーネント供給で開発速度が高い、アクセシビリティ配慮済み。
+  - 短所: デザインの制約/カスタムコスト、バンドルサイズ。長期運用での微調整に内製知見が必要。
+
+- Radix UI + Tailwind（推奨構成）
+  - 位置づけ: 非プリミティブは極力自作しない方針。RadixのアクセシブルなプリミティブにTailwindでテーマ適用し、`cva`/`tailwind-variants`でバリアント管理。
+
+- Styled Components / Emotion
+  - 長所: コンポーネント単位のスタイルカプセル化。
+  - 短所: ランタイムコスト、型補完/テーマ運用に追加設計が必要。Next.js RSCとの相性考慮が必要。
+
+選定結果（CSS）: Tailwind CSS を採用。アクセシビリティ確保とコアUIの再利用性向上のため Radix UI を併用。デザイントークンはCSS変数 + Tailwindテーマで集中管理し、クラス構築には `clsx` と `class-variance-authority`（または `tailwind-variants`）を用いる。
 
 ## 3. データベース設計
 
@@ -393,6 +501,113 @@ stateDiagram-v2
     *   受験者ごとのアセスメント一覧と総合スコアを表示。
     *   アセスメントを選択すると、問題ごとのスコア、提出コード、実行結果の詳細を閲覧可能。
 
+### 4.2. UIデザインシステム（トークン）
+
+目的: UIの一貫性・可読性・アクセシビリティを担保し、エンジニアのローテーション時でもルールに沿って素早く拡張できるよう、デザイントークンを定義する。Tailwind CSS のテーマはこれらのトークンを参照して設定する。
+
+方針:
+- トークンはCSS変数で定義し、`[data-theme="light"]` / `[data-theme="dark"]` で切替。
+- Tailwindはトークン参照を前提にテーマを拡張（色・間隔・半径・影など）。
+- コンポーネントの状態バリアントは `class-variance-authority`（または `tailwind-variants`）で管理。
+- アクセシビリティ: コントラスト比は原則 4.5:1 以上を満たす色組合せを採用。
+
+コアトークン（抽象）
+- 色（抽象）
+  - `--color-primary`, `--color-accent`, `--color-success`, `--color-warning`, `--color-danger`
+  - グレースケール: `--gray-0`(背景最明) ～ `--gray-950`(最暗)
+- タイポグラフィ
+  - フォント: `--font-sans`, `--font-mono`
+  - サイズ: `--font-size-xs(12)`, `--sm(14)`, `--base(16)`, `--lg(18)`, `--xl(20)`, `--2xl(24)`, `--3xl(30)`
+  - 行間: `--leading-tight(1.25)`, `--normal(1.5)`, `--relaxed(1.7)`
+  - 太さ: `--weight-regular(400)`, `--medium(500)`, `--semibold(600)`, `--bold(700)`
+- スペーシング（4pxベース）
+  - `--space-0(0)`, `--1(4)`, `--2(8)`, `--3(12)`, `--4(16)`, `--6(24)`, `--8(32)`, `--10(40)`, `--12(48)`
+- 角丸
+  - `--radius-sm(4)`, `--md(8)`, `--lg(12)`, `--xl(16)`, `--full(9999)`
+- エレベーション/影
+  - `--shadow-1`, `--shadow-2`, `--shadow-3`, `--shadow-4`（段階的に強く）
+- 枠線/フォーカス
+  - `--border-color`, `--border-width-1(1px)`, `--border-width-2(2px)`
+  - `--focus-ring-color`, `--focus-ring-offset(2px)`, `--focus-ring-width(2px)`
+- モーション
+  - 時間: `--duration-100(100ms)`, `--150`, `--200`, `--300`
+  - イージング: `--ease-standard(cubic-bezier(0.2,0,0,1))`, `--ease-emphasized(0.2,0,0,1)`
+- レイヤリング
+  - `--z-dropdown(1000)`, `--z-modal(1100)`, `--z-toast(1200)`, `--z-overlay(1300)`
+
+セマンティックトークン（用途）
+- 背景/面/境界
+  - `--bg`, `--surface`, `--surface-muted`, `--surface-elevated`, `--border`
+- テキスト
+  - `--text`, `--text-muted`, `--text-inverse`
+- アクション
+  - `--primary`, `--on-primary`（コントラストテキスト）
+  - `--accent`, `--on-accent`
+  - `--success`, `--on-success`; `--warning`, `--on-warning`; `--danger`, `--on-danger`
+
+ライト/ダーク値（推奨カラーパレット例）
+- ライトテーマ（例）
+  - `--bg: #ffffff`, `--surface: #f8fafc`, `--surface-muted: #f1f5f9`, `--border: #e2e8f0`
+  - `--text: #0f172a`, `--text-muted: #475569`
+  - `--primary: #2563eb`, `--on-primary: #ffffff`
+  - `--accent: #7c3aed`, `--on-accent: #ffffff`
+  - `--success: #16a34a`, `--warning: #f59e0b`, `--danger: #dc2626`
+- ダークテーマ（例）
+  - `--bg: #0b1220`, `--surface: #0f172a`, `--surface-muted: #111827`, `--border: #1f2937`
+  - `--text: #e5e7eb`, `--text-muted: #94a3b8`
+  - `--primary: #3b82f6`, `--on-primary: #0b1220`
+  - `--accent: #a78bfa`, `--on-accent: #0b1220`
+  - `--success: #22c55e`, `--warning: #fbbf24`, `--danger: #ef4444`
+
+適用指針
+- コンポーネントは「セマンティックトークン」のみを参照し、原色値や抽象トークンを直接参照しない。
+- Tailwindのユーティリティは、テーマ拡張でCSS変数を解決する形を基本とする。
+- フォーカス・ホバー・無効などの状態は、デザイントークンで色/影/境界を規定した上で `data-state` 属性またはARIA属性に応じてスタイルを適用する。
+- コンポーネントプリミティブ（ボタン、入力、カード、ダイアログなど）は Radix UI を土台に構築し、トークンで外観を統一する。
+
+### 4.3. トンマナ選定と適用範囲（採用方針）
+
+採用するトンマナ: A. Trust & Focus を基調に、学習系ダッシュボード/ゲーミフィケーション箇所のみ B. Energetic Learning のアクセント（lime/cyan）を限定併用するハイブリッド。
+
+採用カラートークン（ライト/ダーク）
+- Primary（主要動線/CTA）
+  - light: `--primary: #2563eb`（blue-600）, `--on-primary: #ffffff`
+  - dark: `--primary: #3b82f6`（blue-500）, `--on-primary: #0b1220`
+- Secondary Accent（一般アクセント/タグ/リンク強調）
+  - light: `--accent: #7c3aed`（violet-600）, `--on-accent: #ffffff`
+  - dark: `--accent: #a78bfa`（violet-300）, `--on-accent: #0b1220`
+- Energetic Accents（学習/実績/進捗の限定用途）
+  - lime: `--accent-lime: #84cc16`（light）, `--accent-lime-dark: #a3e635`（dark）, `--on-accent-lime: #0b1220`
+  - cyan: `--accent-cyan: #06b6d4`（light）, `--accent-cyan-dark: #22d3ee`（dark）, `--on-accent-cyan: #0b1220`
+
+Tailwindテーマへのマッピング（例）
+- `colors.primary.DEFAULT = var(--primary)` / `colors.primary.foreground = var(--on-primary)`
+- `colors.accent.DEFAULT = var(--accent)` / `colors.accent.foreground = var(--on-accent)`
+- `colors.accentLime.DEFAULT = var(--accent-lime)` / `colors.accentLime.dark = var(--accent-lime-dark)`
+- `colors.accentCyan.DEFAULT = var(--accent-cyan)` / `colors.accentCyan.dark = var(--accent-cyan-dark)`
+
+適用ルール（重要）
+- Energetic（lime/cyan）は「学習ダッシュボード/ゲーミフィケーション」に限定。
+  - 主な適用先: バッジ/アチーブメント、進捗バー、ハイライトされたメトリクス、グラフの強調系列。
+  - 禁止: 主要CTA/危険操作/フォーム主要要素での使用。Primaryと競合させない。
+  - 1画面あたり同時使用は1系統まで（lime または cyan どちらか）。使用面積の目安は画面の10%以内。
+- Secondary（violet）は一般アクセント（タグ/リンク/二次ボタン）に使用。Primaryの代替にはしない。
+- コントラスト比はテキストで4.5:1以上、アイコン/ボタン前景で3:1以上を満たす。
+- 状態表現は色に依存せず、アイコン/ラベル/フォーカスリングで冗長化する。
+
+コンポーネント意図マップ（推奨）
+- Button: `intent=primary|secondary|neutral|success|warning|danger`
+  - primary=Primary、secondary=Secondary、neutral=グレー系、success/warning/danger=各セマンティック色
+  - 学習系の達成/進捗UIはボタンではなくBadge/Tag/Progressでlime/cyanを使用
+- Progress/Badge/Tag（学習/実績）: lime/cyan を用途に応じて選択（重複使用は避ける）
+- Chart: 強調系列のみ lime/cyan、基調はグレー/Primary系で可視コントラストを確保
+
+レビュー・検証チェックリスト
+- 主要画面での色使用率（Primary:Accent:Neutral）が 1:1:8 付近に収まっているか
+- CTAが常にPrimaryで一意に見分けられるか
+- アクセントの乱用がないか（1画面でのlime/cyan同時使用禁止）
+- コントラストとフォーカスリングがWCAG基準を満たすか
+
 ## 5. API仕様
 
 ### 5.1. アセスメント関連API
@@ -436,3 +651,5 @@ stateDiagram-v2
     -   **スキルマップダッシュボード**:
         -   `roadmap.sh`のように、インタラクティブにズームやパンが可能なスキルツリーとして描画する。
         -   各ノードは習熟度に応じて色分けされ（例: 未着手、学習中、習得済み）、クリックすると詳細や関連問題が表示される。
+- 付録/詳細ガイド
+- フロントエンドの具体的な運用ガイド（Tailwind テーマ設計、cva のバリアント設計、主要コンポーネント要件など）は docs/frontend_style_guide.md を参照。
