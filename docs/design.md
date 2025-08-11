@@ -94,6 +94,7 @@ graph TD
 ## 3. データベース設計
 
 ### 3.1. ER図 (Mermaid)
+
 ```mermaid
 erDiagram
     USERS ||--o{ PROBLEMS : "作成"
@@ -184,7 +185,152 @@ erDiagram
     }
 ```
 
-### 3.2. データステータス遷移図
+### 3.2. テーブル定義一覧
+
+| 物理名 | 論理名 | 概要 |
+| :--- | :--- | :--- |
+| `USERS` | ユーザー | システムを利用する全てのユーザー（受験者、採用担当者など）の情報を格納する。 |
+| `PROBLEMS` | 問題 | コーディングテストの問題文、難易度、カテゴリなどの情報を格納する。 |
+| `TEST_CASES` | テストケース | 各問題に紐づくテストケース（入力、期待出力）を格納する。 |
+| `LANGUAGES` | 対応言語 | システムが採点に対応しているプログラミング言語とバージョンを格納する。 |
+| `ASSESSMENTS` | アセスメント | 複数の問題を束ねた評価セット（試験全体）の情報を格納する。 |
+| `ASSESSMENT_PROBLEMS` | アセスメント問題関連 | アセスメントと問題の多対多の関連を定義する中間テーブル。 |
+| `CANDIDATE_ASSESSMENTS` | 受験者アセスメント | どの受験者がどのアセスメントを受験するかを管理する。 |
+| `SUBMISSIONS` | 提出コード | 受験者が提出したコード、ステータス、採点結果を格納する。 |
+| `SKILL_MAPS` | スキルマップ | エンジニア育成用のスキルマップ（例: フロントエンドロードマップ）を定義する。 |
+| `SKILL_NODES` | スキルノード | スキルマップを構成する個々のスキル項目（例: CSS, React）を定義する。 |
+| `PROBLEM_SKILL_NODES` | 問題スキルノード関連 | 問題とスキルノードの多対多の関連を定義する中間テーブル。 |
+
+### 3.3. 詳細テーブル定義
+
+#### **USERS (ユーザー)**
+システムを利用する全てのユーザー情報を格納する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `id` | ユーザーID | SERIAL | PK | ユーザーを一意に識別する主キー |
+| 2 | `name` | 氏名 | VARCHAR(255) | NOT NULL | ユーザーの氏名 |
+| 3 | `email` | メールアドレス | VARCHAR(255) | NOT NULL, UNIQUE | ログインに使用するメールアドレス |
+| 4 | `password_hash` | パスワードハッシュ | VARCHAR(255) | NOT NULL | ハッシュ化されたパスワード |
+| 5 | `role` | 役割 | VARCHAR(50) | NOT NULL | ユーザーの役割 (Candidate, Recruiter, Adminなど) |
+| 6 | `created_at` | 作成日時 | TIMESTAMP | NOT NULL | レコード作成日時 |
+| 7 | `updated_at` | 更新日時 | TIMESTAMP | NOT NULL | レコード更新日時 |
+
+#### **PROBLEMS (問題)**
+コーディングテストの問題に関する情報を格納する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `id` | 問題ID | SERIAL | PK | 問題を一意に識別する主キー |
+| 2 | `title` | 問題タイトル | VARCHAR(255) | NOT NULL | 問題のタイトル |
+| 3 | `description` | 問題文 | TEXT | NOT NULL | Markdown形式の問題文 |
+| 4 | `difficulty` | 難易度 | VARCHAR(50) | NOT NULL | 問題の難易度 (Easy, Medium, Hard) |
+| 5 | `category` | カテゴリ | VARCHAR(100) | | 問題のカテゴリ (例: アルゴリズム, データ構造) |
+| 6 | `author_id` | 作成者ID | INTEGER | FK (USERS) | 問題を作成したユーザーのID |
+| 7 | `created_at` | 作成日時 | TIMESTAMP | NOT NULL | レコード作成日時 |
+| 8 | `updated_at` | 更新日時 | TIMESTAMP | NOT NULL | レコード更新日時 |
+
+#### **TEST_CASES (テストケース)**
+各問題に紐づくテストケースを格納する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `id` | テストケースID | SERIAL | PK | テストケースを一意に識別する主キー |
+| 2 | `problem_id` | 問題ID | INTEGER | NOT NULL, FK (PROBLEMS) | 紐づく問題のID |
+| 3 | `name` | テストケース名 | VARCHAR(255) | | テストケースの名称（例: 基本ケース, エッジケース） |
+| 4 | `input` | 入力値 | TEXT | | コードに渡される標準入力値 |
+| 5 | `expected_output` | 期待する出力 | TEXT | | コードが標準出力すべき期待値 |
+| 6 | `is_hidden` | 非公開フラグ | BOOLEAN | NOT NULL, DEFAULT FALSE | 受験者にテストケースの内容を公開するかどうか |
+| 7 | `weight` | 重み | FLOAT | NOT NULL, DEFAULT 1.0 | 採点時の配点ウェイト |
+
+#### **LANGUAGES (対応言語)**
+システムが対応するプログラミング言語を格納する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `id` | 言語ID | SERIAL | PK | 言語を一意に識別する主キー |
+| 2 | `name` | 言語名 | VARCHAR(100) | NOT NULL | プログラミング言語名 (例: Python, JavaScript) |
+| 3 | `version` | バージョン | VARCHAR(50) | NOT NULL | 言語のバージョン (例: 3.9, 18.x) |
+| 4 | `docker_image` | Dockerイメージ | VARCHAR(255) | NOT NULL | 採点に使用するDockerイメージ名 |
+
+#### **ASSESSMENTS (アセスメント)**
+複数の問題を束ねた評価セット（試験）を定義する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `id` | アセスメントID | SERIAL | PK | アセスメントを一意に識別する主キー |
+| 2 | `title` | タイトル | VARCHAR(255) | NOT NULL | アセスメントの名称 |
+| 3 | `description` | 説明 | TEXT | | アセスメントの詳細な説明 |
+| 4 | `time_limit_minutes` | 制限時間(分) | INTEGER | | アセスメント全体の制限時間（分単位） |
+| 5 | `created_by` | 作成者ID | INTEGER | NOT NULL, FK (USERS) | アセスメントを作成したユーザーのID |
+| 6 | `created_at` | 作成日時 | TIMESTAMP | NOT NULL | レコード作成日時 |
+| 7 | `updated_at` | 更新日時 | TIMESTAMP | NOT NULL | レコード更新日時 |
+
+#### **ASSESSMENT_PROBLEMS (アセスメント問題関連)**
+アセスメントと問題の多対多の関連を定義する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `assessment_id` | アセスメントID | INTEGER | PK, FK (ASSESSMENTS) | 関連するアセスメントのID |
+| 2 | `problem_id` | 問題ID | INTEGER | PK, FK (PROBLEMS) | 関連する問題のID |
+| 3 | `order` | 表示順 | INTEGER | NOT NULL | アセスメント内での問題の表示順序 |
+
+#### **CANDIDATE_ASSESSMENTS (受験者アセスメント)**
+どの受験者がどのアセスメントを受験するかを管理する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `id` | 受験アセスメントID | SERIAL | PK | 受験を一意に識別する主キー |
+| 2 | `assessment_id` | アセスメントID | INTEGER | NOT NULL, FK (ASSESSMENTS) | 受験するアセスメントのID |
+| 3 | `candidate_id` | 受験者ID | INTEGER | NOT NULL, FK (USERS) | 受験するユーザーのID |
+| 4 | `status` | ステータス | VARCHAR(50) | NOT NULL | 受験の進捗 (Pending, InProgress, Completed, Expired) |
+| 5 | `due_date` | 受験期限 | TIMESTAMP | | この日時を過ぎると受験不可となる |
+| 6 | `completed_at` | 完了日時 | TIMESTAMP | | 受験者がアセスメントを完了した日時 |
+| 7 | `overall_score` | 総合スコア | FLOAT | | アセスメント全体のスコア |
+
+#### **SUBMISSIONS (提出コード)**
+受験者が提出したコードと採点結果を格納する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `id` | 提出ID | SERIAL | PK | 提出を一意に識別する主キー |
+| 2 | `candidate_assessment_id` | 受験アセスメントID | INTEGER | NOT NULL, FK (CANDIDATE_ASSESSMENTS) | どの受験アセスメントに対する提出かを示すID |
+| 3 | `problem_id` | 問題ID | INTEGER | NOT NULL, FK (PROBLEMS) | 提出対象の問題ID |
+| 4 | `language_id` | 言語ID | INTEGER | NOT NULL, FK (LANGUAGES) | 提出に使用された言語のID |
+| 5 | `code` | コード | TEXT | NOT NULL | 提出されたソースコード |
+| 6 | `status` | ステータス | VARCHAR(50) | NOT NULL | 採点ステータス (Pending, Scoring, Success, Failure) |
+| 7 | `score` | スコア | FLOAT | | この提出に対するスコア |
+| 8 | `submitted_at` | 提出日時 | TIMESTAMP | NOT NULL | コードが提出された日時 |
+
+#### **SKILL_MAPS (スキルマップ)**
+エンジニア育成用のスキルマップ（ロードマップ）を定義する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `id` | スキルマップID | SERIAL | PK | スキルマップを一意に識別する主キー |
+| 2 | `name` | 名称 | VARCHAR(255) | NOT NULL | スキルマップの名称（例: バックエンドエンジニア v1） |
+| 3 | `description` | 説明 | TEXT | | スキルマップの詳細な説明 |
+
+#### **SKILL_NODES (スキルノード)**
+スキルマップを構成する個々のスキル項目を定義する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `id` | スキルノードID | SERIAL | PK | スキルノードを一意に識別する主キー |
+| 2 | `skill_map_id` | スキルマップID | INTEGER | NOT NULL, FK (SKILL_MAPS) | 所属するスキルマップのID |
+| 3 | `name` | 名称 | VARCHAR(255) | NOT NULL | スキルノードの名称（例: REST API, GraphQL） |
+| 4 | `description` | 説明 | TEXT | | スキルノードの詳細な説明 |
+| 5 | `parent_node_id` | 親ノードID | INTEGER | FK (SKILL_NODES) | 親ノードID。ツリー構造を表現する自己参照キー |
+
+#### **PROBLEM_SKILL_NODES (問題スキルノード関連)**
+問題とスキルノードの多対多の関連を定義する。
+
+| No | 物理名 | 論理名 | データ型 | 制約 | 用途 |
+| :-- | :--- | :--- | :--- | :--- | :--- |
+| 1 | `problem_id` | 問題ID | INTEGER | PK, FK (PROBLEMS) | 関連する問題のID |
+| 2 | `skill_node_id` | スキルノードID | INTEGER | PK, FK (SKILL_NODES) | 関連するスキルノードのID |
+
+### 3.4. データステータス遷移図
 
 #### `CANDIDATE_ASSESSMENTS` (受験アセスメント)
 ```mermaid
