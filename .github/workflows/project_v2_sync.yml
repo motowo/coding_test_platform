@@ -1,4 +1,4 @@
-name: ProjectV2: Add issues to roadmap
+name: "ProjectV2: Add issues to roadmap"
 
 on:
   workflow_dispatch:
@@ -27,22 +27,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Prepare issue list
-        id: prep
+      # issues イベント: 単一Issue番号を出力
+      - name: Prepare numbers (issues event)
+        if: github.event_name == 'issues'
+        id: prep_issues
+        run: echo "numbers=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+
+      # dispatch: backfill（全Open Issueを対象）
+      - name: Prepare numbers (dispatch backfill)
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'backfill'
+        id: prep_backfill
         env:
           GH_TOKEN: ${{ secrets.PROJECT_PAT }}
         run: |
           set -euo pipefail
-          REPO="$GITHUB_REPOSITORY"
-          MODE="${{ github.event_name == 'issues' && 'single' || inputs.mode }}"
-          if [ "$MODE" = "single" ]; then
-            NUM="${{ github.event.issue.number || inputs.issue_number }}"
-            echo "numbers=$NUM" >> "$GITHUB_OUTPUT"
-          else
-            # backfill all open issues (epic+tasks)
-            gh api repos/$REPO/issues --paginate -q '.[].number' > issue_numbers.txt
-            echo "numbers=$(paste -sd, issue_numbers.txt)" >> "$GITHUB_OUTPUT"
-          fi
+          gh api repos/${{ github.repository }}/issues --paginate -q '.[].number' > issue_numbers.txt
+          echo "numbers=$(paste -sd, issue_numbers.txt)" >> "$GITHUB_OUTPUT"
+
+      # dispatch: single（指定Issue番号を対象）
+      - name: Prepare numbers (dispatch single)
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'single'
+        id: prep_single
+        run: echo "numbers=${{ inputs.issue_number }}" >> "$GITHUB_OUTPUT"
 
       - name: Resolve Project and Status field
         id: proj
@@ -62,14 +68,15 @@ jobs:
           echo "statusFieldId=$statusFieldId" >> "$GITHUB_OUTPUT"
           echo "todoOptionId=$todoOptionId" >> "$GITHUB_OUTPUT"
 
-      - name: Add issues to project and set Status=Todo
+      - name: Add issues to project and set Status=Todo (issues event)
+        if: github.event_name == 'issues'
         env:
           GH_TOKEN: ${{ secrets.PROJECT_PAT }}
           REPO: ${{ github.repository }}
           PROJECT_ID: ${{ steps.proj.outputs.projectId }}
           STATUS_FIELD_ID: ${{ steps.proj.outputs.statusFieldId }}
           TODO_OPTION_ID: ${{ steps.proj.outputs.todoOptionId }}
-          NUMBERS: ${{ steps.prep.outputs.numbers }}
+          NUMBERS: ${{ steps.prep_issues.outputs.numbers }}
         run: |
           set -euo pipefail
           IFS=',' read -r -a nums <<< "$NUMBERS"
@@ -85,3 +92,44 @@ jobs:
             echo "Added #$n -> item $item"
           done
 
+      - name: Add issues to project and set Status=Todo (dispatch backfill)
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'backfill'
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+          REPO: ${{ github.repository }}
+          PROJECT_ID: ${{ steps.proj.outputs.projectId }}
+          STATUS_FIELD_ID: ${{ steps.proj.outputs.statusFieldId }}
+          TODO_OPTION_ID: ${{ steps.proj.outputs.todoOptionId }}
+          NUMBERS: ${{ steps.prep_backfill.outputs.numbers }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -r -a nums <<< "$NUMBERS"
+          for n in "${nums[@]}"; do
+            node=$(gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){ repository(owner:$o,name:$r){ issue(number:$n){ id } } }' -f o="${REPO%/*}" -f r="${REPO#*/}" -F n="$n" -q .data.repository.issue.id)
+            item=$(gh api graphql -f query='mutation($p:ID!,$c:ID!){ addProjectV2ItemById(input:{projectId:$p,contentId:$c}){ item { id } } }' -f p="$PROJECT_ID" -f c="$node" -q .data.addProjectV2ItemById.item.id)
+            if [ -n "$STATUS_FIELD_ID" ] && [ -n "$TODO_OPTION_ID" ] && [ "$STATUS_FIELD_ID" != "null" ] && [ "$TODO_OPTION_ID" != "null" ]; then
+              gh api graphql -f query='mutation($p:ID!,$i:ID!,$f:ID!,$o:ID!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ clientMutationId }}' -f p="$PROJECT_ID" -f i="$item" -f f="$STATUS_FIELD_ID" -f o="$TODO_OPTION_ID" >/dev/null || true
+            fi
+            echo "Added #$n -> item $item"
+          done
+
+      - name: Add issues to project and set Status=Todo (dispatch single)
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'single'
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+          REPO: ${{ github.repository }}
+          PROJECT_ID: ${{ steps.proj.outputs.projectId }}
+          STATUS_FIELD_ID: ${{ steps.proj.outputs.statusFieldId }}
+          TODO_OPTION_ID: ${{ steps.proj.outputs.todoOptionId }}
+          NUMBERS: ${{ steps.prep_single.outputs.numbers }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -r -a nums <<< "$NUMBERS"
+          for n in "${nums[@]}"; do
+            node=$(gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){ repository(owner:$o,name:$r){ issue(number:$n){ id } } }' -f o="${REPO%/*}" -f r="${REPO#*/}" -F n="$n" -q .data.repository.issue.id)
+            item=$(gh api graphql -f query='mutation($p:ID!,$c:ID!){ addProjectV2ItemById(input:{projectId:$p,contentId:$c}){ item { id } } }' -f p="$PROJECT_ID" -f c="$node" -q .data.addProjectV2ItemById.item.id)
+            if [ -n "$STATUS_FIELD_ID" ] && [ -n "$TODO_OPTION_ID" ] && [ "$STATUS_FIELD_ID" != "null" ] && [ "$TODO_OPTION_ID" != "null" ]; then
+              gh api graphql -f query='mutation($p:ID!,$i:ID!,$f:ID!,$o:ID!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ clientMutationId }}' -f p="$PROJECT_ID" -f i="$item" -f f="$STATUS_FIELD_ID" -f o="$TODO_OPTION_ID" >/dev/null || true
+            fi
+            echo "Added #$n -> item $item"
+          done
