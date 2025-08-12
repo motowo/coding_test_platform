@@ -1,0 +1,39 @@
+name: Task
+description: 実装可能な粒度のタスク
+labels: ["type/task"]
+body:
+  - type: input
+    id: summary
+    attributes:
+      label: 概要
+      description: タスクの要約（短文）
+      placeholder: 例）ユーザー登録APIの実装
+    validations:
+      required: true
+  - type: textarea
+    id: background
+    attributes:
+      label: 背景・目的
+      description: なぜ必要か、どの価値に寄与するか
+  - type: textarea
+    id: scope
+    attributes:
+      label: スコープ（含む/含まない）
+      description: 実装範囲を明確にする
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 受入基準（DoD）
+      description: 具体的な確認観点（テスト観点を含む）
+  - type: textarea
+    id: dependencies
+    attributes:
+      label: 依存関係（Depends on）
+      description: 先行タスク（Issue番号）を列挙
+      placeholder: Depends on: #123, #124
+  - type: textarea
+    id: notes
+    attributes:
+      label: 実装/検証メモ
+      description: 実装方針、補足、参考リンクなど
+

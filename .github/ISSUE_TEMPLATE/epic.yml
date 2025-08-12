@@ -1,0 +1,31 @@
+name: Epic
+description: プロダクトのエピック（複数タスクの親）
+labels: ["type/epic", "mvp"]
+body:
+  - type: textarea
+    id: goal
+    attributes:
+      label: 目的・期待価値
+      description: このエピックで達成する価値を簡潔に記載してください。
+      placeholder: 例）MVPの受験フローを通じて受験者が提出・採点・結果閲覧まで実行できる
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: スコープ
+      description: 含む/含まないを明確に記載してください。
+      placeholder: 含む：X, Y / 含まない：Z
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: 完了条件（受入基準）
+      description: DoD（具体的な確認観点）を列挙してください。
+      placeholder: - 主要ユースケースがE2EでGreen など
+  - type: textarea
+    id: related
+    attributes:
+      label: 関連（子タスク）
+      description: 作成後、子タスクIssueをチェックリストでリンクしてください（- [ ] #123 タイトル）。
+      placeholder: - [ ] #123 タスク名
+
