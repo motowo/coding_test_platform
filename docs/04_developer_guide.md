@@ -137,6 +137,7 @@
 - `ProjectV2: Sync status with issues`: Issueイベント（open/assign/label/close）に応じて Project の Status を更新
 - `PR: Auto create draft from branch`: ブランチPush時に、分岐規則に合致すればドラフトPRを自動作成し、関連Issueを In Progress に設定
 - PRテンプレート: `.github/pull_request_template.md`（関連Issue、タスク網羅性、計画外作業の明記を必須）
+ - `Issues: Auto manage 'blocked' label by dependencies`: Issue本文の「Depends on: #…」に基づき、依存が未完のタスクへ `blocked` ラベルを自動付与/解除
 
 運用ヒント
 - Projectのビューは「Group by: Milestone」「Filter: label:mvp or Milestone=M1/M2」「Sort by: priority/P*」を推奨

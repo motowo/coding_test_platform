@@ -1,0 +1,80 @@
+name: "Issues: Auto manage 'blocked' label by dependencies"
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: backfill or single
+        required: true
+        default: single
+      issue_number:
+        description: when mode=single, target issue number
+        required: false
+  issues:
+    types: [opened, edited, reopened, closed, labeled, unlabeled]
+
+jobs:
+  manage-blocked:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    env:
+      REPO: ${{ github.repository }}
+    steps:
+      - name: Determine target issues
+        id: target
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.mode }}" = "backfill" ]; then
+            # All open issues
+            numbers=$(gh issue list -R "$REPO" --state open --json number -q '.[].number' | tr '\n' ',')
+          else
+            # Current issue
+            cur=${{ github.event.issue.number }}
+            if [ -z "${cur}" ]; then cur=${{ inputs.issue_number || '' }}; fi
+            numbers="$cur"
+            # Also include reverse dependents: open issues whose body contains "Depends on: #<cur>"
+            if [ -n "$cur" ]; then
+              rev=$(gh issue list -R "$REPO" --state open --json number,body -q '.[] | select(.body!=null and (.body | contains("Depends on: #'"$cur"'"))) | .number' | tr '\n' ',')
+              if [ -n "$rev" ]; then numbers="$numbers,$rev"; fi
+            fi
+          fi
+          # normalize comma-separated list
+          numbers=$(echo "$numbers" | sed 's/^,*//; s/,*$//; s/,,*/,/g')
+          echo "numbers=$numbers" >> "$GITHUB_OUTPUT"
+
+      - name: Compute and apply 'blocked' label
+        if: steps.target.outputs.numbers != ''
+        env:
+          REPO: ${{ env.REPO }}
+          NUMBERS: ${{ steps.target.outputs.numbers }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -r -a arr <<< "$NUMBERS"
+          for n in "${arr[@]}"; do
+            [ -z "$n" ] && continue
+            body=$(gh issue view "$n" -R "$REPO" --json body -q .body || echo '')
+            # extract dependency issue numbers from "Depends on:" lines
+            deps=$(printf "%s\n" "$body" | awk '/^Depends on:/{print}' | grep -oE '#[0-9]+' | tr -d '#' | tr '\n' ' ' || true)
+            blocked=0
+            if [ -n "$deps" ]; then
+              for d in $deps; do
+                st=$(gh issue view "$d" -R "$REPO" --json state -q .state || echo OPEN)
+                if [ "$st" != "CLOSED" ]; then blocked=1; break; fi
+              done
+            fi
+            # apply or remove label
+            labels=$(gh issue view "$n" -R "$REPO" --json labels -q '[.labels[].name] | join(",")' || echo '')
+            has_blocked=0; echo "$labels" | grep -q '\bblocked\b' && has_blocked=1 || true
+            if [ "$blocked" -eq 1 ] && [ "$has_blocked" -eq 0 ]; then
+              gh issue edit "$n" -R "$REPO" --add-label blocked
+              echo "#${n}: add blocked"
+            elif [ "$blocked" -eq 0 ] && [ "$has_blocked" -eq 1 ]; then
+              gh issue edit "$n" -R "$REPO" --remove-label blocked || true
+              echo "#${n}: remove blocked"
+            else
+              echo "#${n}: no change (blocked=$blocked)"
+            fi
+          done
+
