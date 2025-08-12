@@ -1,0 +1,2 @@
+# 常に手動で確認する設定
+ask_for_approval = "always"
