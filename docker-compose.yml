@@ -82,37 +82,69 @@ services:
 
   # MCP - Serena (Development only)
   skillgaug-serena-mcp:
-    image: serena:latest
+    image: ghcr.io/oraios/serena:latest
     container_name: skillgaug-serena-mcp-1
     restart: unless-stopped
-    environment:
-      NODE_ENV: development
+    ports:
+      - "9121:9121"
+      - "24282:24282"
     volumes:
-      - ./:/workspaces/projects/coding_test_platform:ro
+      - .:/workspaces/projects/coding_test_platform:ro
+      - ./serena_config:/root/.serena
+      - serena_cache:/serena/.cache
+    environment:
+      SERENA_PROJECT: /workspaces/projects/coding_test_platform
+      SERENA_CONTEXT: ide-assistant
     networks:
       - skillgaug
     profiles:
       - development
       - mcp
+    stdin_open: true
+    tty: true
+    command: serena start-mcp-server --transport sse --port 9121
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:24282"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # MCP - Playwright (Development only)
   skillgaug-playwright-mcp:
-    build:
-      context: ./tests/playwright-mcp
-      dockerfile: Dockerfile
+    image: mcr.microsoft.com/playwright:v1.40.0-jammy
+    working_dir: /workspace
     container_name: skillgaug-playwright-mcp-1
     restart: unless-stopped
+    ports:
+      - "3001:3001"
     environment:
       NODE_ENV: development
+      MCP_PORT: 3001
       PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
     volumes:
-      - ./tests:/workspace/tests
+      - .:/workspace
+      - ./tests/screenshots:/workspace/tests/screenshots
+      - ./tests/videos:/workspace/tests/videos
+      - ./tests/reports:/workspace/tests/reports
       - playwright_browsers:/ms-playwright
     networks:
       - skillgaug
     profiles:
       - development
       - mcp
+    cap_add:
+      - SYS_ADMIN
+    security_opt:
+      - seccomp:unconfined
+    command: >
+      sh -c "
+        cd /workspace/tests/playwright-mcp &&
+        npm ci &&
+        npx playwright install --with-deps &&
+        cd /workspace/tests &&
+        npm install &&
+        exec node mcp-playwright-server.js
+      "
 
 volumes:
   postgres_data:
@@ -120,6 +152,8 @@ volumes:
   redis_data:
     driver: local
   playwright_browsers:
+    driver: local
+  serena_cache:
     driver: local
 
 networks:
