@@ -3,10 +3,10 @@
 本マニュアルは、Coding Test Platform の開発に参加するエンジニア向けの実務ガイドです。開発開始からローカル実行、テスト、レビュー、リリースまでの標準フローを定義します。
 
 本書は docs 内の設計・要件・タスク文書と整合しています。詳細仕様は以下を参照してください。
-- 要件定義: docs/requirements.md
-- 技術設計: docs/design.md
-- 開発タスク: docs/tasks.md
-- フロントエンド スタイルガイド: docs/frontend_style_guide.md
+- 要件定義: docs/01_requirements.md
+- 技術設計: docs/02_design.md
+- 開発タスク: docs/03_tasks.md
+- フロントエンド スタイルガイド: docs/08_frontend_style_guide.md
 
 ## 1. 前提とサポート環境
 - OS: macOS / Linux（WSL2 を含む）

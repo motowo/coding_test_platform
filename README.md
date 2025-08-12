@@ -10,23 +10,22 @@
 詳細は下記ドキュメントを参照してください。
 
 ## ドキュメント
-- 要件定義書: `docs/requirements.md`
-  - ペルソナ、機能一覧（MVP明示）、非機能要件、ワークフローを記載
-  - 例: 問題作成/編集、単一問題の受験・提出・採点、結果閲覧など
-- 技術設計書: `docs/design.md`
-  - 全体アーキテクチャ、技術スタック、データモデル、API、画面定義、セキュリティ/性能設計、技術選定の過程と候補比較、UIデザインシステム（トークン）
-  - 付録: フロントエンド運用ガイドは `docs/frontend_style_guide.md`
-- 開発者マニュアル: `docs/developer_guide.md`
- - 開発開始からローカル実行、テスト、レビュー、CI/CD、リリース手順まで
-  - TDD方針（RED→GREEN→REFACTOR）とテスト設計の指針を明記
-- PR 自動チェック: `docs/pr_auto_checks.md`
-  - 必須チェック、条件付きチェック、ブランチ保護/ラベル運用
-- スクリプト定義の例: `docs/package_scripts_guide.md`
-  - 単一/モノレポ構成の `package.json` スクリプト例（CIジョブと対応）
- - テスト戦略: `docs/testing_strategy.md`
-   - ツール選定（Vitest/MSW/Testcontainers/Playwright）、TDD、E2EとMCP分離設計、データ/安定性方針
-- 開発タスク: `docs/tasks.md`
+- 要件定義書: `docs/01_requirements.md`
+  - ペルソナ、機能一覧（MVP明示）、非機能要件、ワークフロー
+  - 例: 問題作成/編集、単一問題の受験・提出・採点、結果閲覧
+- 技術設計書: `docs/02_design.md`
+  - 全体アーキテクチャ、技術スタック、データモデル、API、画面定義、セキュリティ/性能設計、UIデザインシステム（トークン）
+- 開発タスク: `docs/03_tasks.md`
   - エピック/ユーザーストーリー、優先度、受入基準（DoD）、見積り、リスク/ブロッカー
+- 開発者マニュアル: `docs/04_developer_guide.md`
+  - ローカル実行、テスト、レビュー、CI/CD、リリース手順、TDD指針
+- テスト戦略: `docs/05_testing_strategy.md`
+  - ツール選定（Vitest/MSW/Testcontainers/Playwright）、TDD、E2E、安定性方針
+- PR 自動チェック: `docs/06_pr_auto_checks.md`
+  - 必須チェック、条件付きチェック、ブランチ保護/ラベル運用
+- スクリプト定義ガイド: `docs/07_package_scripts_guide.md`
+  - 単一/モノレポ構成の `package.json` スクリプト例（CIジョブと対応）
+- 付録: フロントエンド スタイルガイド `docs/08_frontend_style_guide.md`
 
 あわせて、ドキュメント運用ルールは以下を参照してください。
 - エージェント作業ガイドライン: `AGENTS.md`
@@ -35,21 +34,26 @@
 ## リポジトリ構成
 ```
 .
-├── AGENTS.md           # エージェント向けガイドライン
-├── GEMINI.md           # ドキュメント作成ポリシーの原則
-├── README.md           # 本ファイル（概要/ナビゲーション）
+├── AGENTS.md                        # エージェント向けガイドライン
+├── GEMINI.md                        # ドキュメント作成ポリシーの原則
+├── README.md                        # 本ファイル（概要/ナビゲーション）
 └── docs/
-    ├── design.md       # 技術設計書
-    ├── requirements.md # 要件定義書
-    └── tasks.md        # 開発タスク
+    ├── 01_requirements.md           # 要件定義書（最初に読む）
+    ├── 02_design.md                 # 技術設計書
+    ├── 03_tasks.md                  # 開発タスク
+    ├── 04_developer_guide.md        # 開発者マニュアル
+    ├── 05_testing_strategy.md       # テスト戦略
+    ├── 06_pr_auto_checks.md         # PR 自動チェック
+    ├── 07_package_scripts_guide.md  # スクリプト定義ガイド
+    └── 08_frontend_style_guide.md   # フロントエンド スタイルガイド
 ```
 
 ## ドキュメントの編集フロー（推奨）
 1) 指示・前提の確認（不明点は質問）
 2) MVP/スコープの明記（仮は明示）
-3) `docs/requirements.md` 更新
-4) `docs/design.md` 更新（要件と整合）
-5) `docs/tasks.md` 更新（優先度・受入基準を明確化）
+3) `docs/01_requirements.md` 更新
+4) `docs/02_design.md` 更新（要件と整合）
+5) `docs/03_tasks.md` 更新（優先度・受入基準を明確化）
 6) 3文書の相互整合チェック（API/データ/画面/優先度）
 
 運用ルール（抜粋）:
@@ -58,12 +62,12 @@
 - 仕様変更時は関連する全ファイルを同時に更新することを推奨。
 
 ## 迅速な参照
-- プロダクトの背景/目的/MVP: `docs/requirements.md`
-- API/データモデル/画面: `docs/design.md`
-- 実装・検証に落とし込む手順: `docs/tasks.md`
-- デザインシステム/トークン: `docs/design.md` の「4.2. UIデザインシステム（トークン）」
-- フロントエンド スタイルガイド（Next.js/Tailwind/cva）: `docs/frontend_style_guide.md`
-- 開発フロー/レビュー/テスト: `docs/developer_guide.md`
- - PR 自動チェック運用: `docs/pr_auto_checks.md`
+- プロダクトの背景/目的/MVP: `docs/01_requirements.md`
+- API/データモデル/画面: `docs/02_design.md`
+- 実装・検証に落とし込む手順: `docs/03_tasks.md`
+- デザインシステム/トークン: `docs/02_design.md` 内「UIデザインシステム（トークン）」
+- フロントエンド スタイルガイド（Next.js/Tailwind/cva）: `docs/08_frontend_style_guide.md`
+- 開発フロー/レビュー/テスト: `docs/04_developer_guide.md`
+- PR 自動チェック運用: `docs/06_pr_auto_checks.md`
 
 ご不明点や矛盾点がある場合は、`AGENTS.md` の方針に沿って合意形成のための質問を行ってください。
