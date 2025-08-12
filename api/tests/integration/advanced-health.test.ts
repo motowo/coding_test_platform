@@ -65,11 +65,13 @@ describe('Advanced Health Check with External Services', () => {
     it('should return unhealthy status when database is unavailable', async () => {
       // データベース接続が失敗する状況をテスト
       // 実際の実装では、接続エラー時は500を返すべき
+      const mockPrisma = {
+        $queryRaw: vi.fn().mockRejectedValue(new Error('Database connection failed'))
+      } as unknown as PrismaClient
+      
       const appWithFailingDb = createApp({
         logger: { level: 'silent' },
-        prisma: {
-          $queryRaw: vi.fn().mockRejectedValue(new Error('Database connection failed'))
-        } as any,
+        prisma: mockPrisma,
         redis
       })
       

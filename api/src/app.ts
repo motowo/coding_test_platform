@@ -40,12 +40,12 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
   })
 
   // Detailed health check with external services
-  app.get('/health/detailed', async (request, reply) => {
+  app.get('/health/detailed', async (_, reply) => {
     const metadata = getAppMetadata()
     const uptime = process.uptime()
 
     try {
-      const services: Record<string, any> = {}
+      const services: Record<string, { status: string; responseTimeMs?: number; error?: string }> = {}
       let hasUnhealthyService = false
 
       // Helper function to check service health
@@ -60,10 +60,11 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
             status: 'healthy',
             responseTimeMs: Date.now() - start
           }
-        } catch (error: any) {
+        } catch (error: unknown) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           services[name] = {
             status: 'unhealthy',
-            error: error.message
+            error: errorMessage
           }
           hasUnhealthyService = true
         }
@@ -76,7 +77,9 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
 
       // Check Redis if available
       if (options.redis) {
-        await checkService('redis', () => options.redis!.ping())
+        await checkService('redis', async () => {
+          await options.redis!.ping()
+        })
       }
 
       const responseData = {
@@ -93,31 +96,32 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
         ...responseData,
         uptime
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       return reply.status(503).send({
         status: 'unhealthy',
         ...metadata,
-        error: error.message
+        error: errorMessage
       })
     }
   })
 
   // Readiness probe endpoint
-  app.get('/health/readiness', async (request, reply) => {
+  app.get('/health/readiness', async (_, reply) => {
     const metadata = getAppMetadata()
-    const checks: any = {}
+    const checks: Record<string, string> = {}
 
     try {
       // Check database readiness
       if (options.prisma) {
         await options.prisma.$queryRaw`SELECT 1`
-        checks.database = 'ready'
+        checks['database'] = 'ready'
       }
 
       // Check Redis readiness
       if (options.redis) {
         await options.redis.ping()
-        checks.redis = 'ready'
+        checks['redis'] = 'ready'
       }
 
       return {
@@ -125,9 +129,9 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
         ...metadata,
         checks
       }
-    } catch (error: any) {
-      checks.database = 'not ready'
-      checks.redis = 'not ready'
+    } catch (error: unknown) {
+      checks['database'] = 'not ready'
+      checks['redis'] = 'not ready'
       
       return reply.status(503).send({
         status: 'not ready',
