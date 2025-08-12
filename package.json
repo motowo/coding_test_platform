@@ -8,7 +8,7 @@
     "format:check": "npm run format:check --workspace=api && npm run format:check --workspace=web",
     "typecheck": "npm run typecheck --workspace=api && npm run typecheck --workspace=web",
     "build:api": "npm run build --workspace=api",
-    "build:web": "npm run build --workspace=web", 
+    "build:web": "npm run build --workspace=web",
     "test:unit:api": "npm run test:unit --workspace=api",
     "test:unit:web": "npm run test:unit --workspace=web",
     "test:integration:api": "npm run test:integration --workspace=api",
@@ -19,7 +19,8 @@
     "web"
   ],
   "devDependencies": {
-    "prisma": "^6.13.0"
+    "prisma": "^6.13.0",
+    "puppeteer": "^24.16.1"
   },
   "dependencies": {
     "@prisma/client": "^6.13.0"
