@@ -2,8 +2,9 @@
 
 ## 概要 / 背景
 - 目的・背景（なぜやるか）。ユーザーストーリー/要件の引用可。
-- 関連ドキュメント: docs/requirements.md, docs/design.md, docs/tasks.md など。
-- 関連Issue/チケット: #
+- 関連ドキュメント: `docs/01_requirements.md`, `docs/02_design.md`, `docs/03_tasks.md` など。
+- 関連Issue（必須・着手前に明記）: `#<issue-number>`
+- 作成種別: Draft（原則ドラフトで作成してください）
 
 ## 変更内容
 - 主要な変更点（箇条書き）
@@ -27,11 +28,18 @@
 
 ## ドキュメント更新
 - 対応ドキュメント（必要に応じて同一PRで更新）
-  - [ ] docs/requirements.md
-  - [ ] docs/design.md（API/データ/画面/セキュリティ/性能）
-  - [ ] docs/tasks.md（受入基準/優先度）
-  - [ ] docs/frontend_style_guide.md（スタイル運用）
-  - [ ] docs/developer_guide.md（手順/運用）
+  - [ ] docs/01_requirements.md
+  - [ ] docs/02_design.md（API/データ/画面/セキュリティ/性能）
+  - [ ] docs/03_tasks.md（受入基準/優先度）
+  - [ ] docs/08_frontend_style_guide.md（スタイル運用）
+  - [ ] docs/04_developer_guide.md（手順/運用）
+
+## タスク網羅性の確認（必須）
+- このPRで解決するタスク（Issue内タスクID/T-IDなど）
+  - [ ] 例: T-021 問題作成API（POST /api/v1/problems）
+  - [ ] 例: T-024 問題作成・編集ページのUI
+- 計画外で発生した作業（あれば記載し、Issueにも反映）
+  - [ ] 作業名: 背景/理由
 
 ---
 

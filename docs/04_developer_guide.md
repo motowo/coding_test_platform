@@ -105,7 +105,42 @@
   - パフォーマンス: 不要な再レンダリング/重いクエリ/不要I/O がない。
   - アクセシビリティ: フォーカス/コントラスト/ARIA/キーボード操作。
   - UX/UI: スタイルガイド準拠、CTA一意性、lime/cyanの限定運用。
-  - ドキュメント: README/設計/タスクの更新が必要な場合は同一PRで更新。
+- ドキュメント: README/設計/タスクの更新が必要な場合は同一PRで更新。
+
+### 7.1 Issue 開始ルール（可視化と同期）
+- 開始の宣言
+  - 担当を割り当て（assign）、必要なら `status/in-progress` ラベルを付与（自動でProjectのStatusがIn Progressに同期）
+  - Issue本文のチェックリスト（タスク）を見直し、抜けがあれば追記・分割（サブIssueを作成し親Issueにリンク）
+- ブランチ命名（Issue番号を必須に含める）
+  - 例: `feat/issue-<number>-short-title`、`fix/issue-<number>-...`、`docs/issue-<number>-...`
+  - 例: `feat/issue-27-problems-schema`（Issue #27 に対応）
+- コミット規約（Issue参照を必須）
+  - 進行中コミット: `refs #<number>` を本文に含める（例: `feat(api): add schema refs #27`）
+  - 完了コミット（マージ時に自動Closeしたい場合）: `closes #<number>` をPR本文に含める
+
+### 7.2 PR 作成ルール（ドラフト運用）
+- 着手時にドラフトPRを作成（自動化）
+  - ブランチPush時に自動でドラフトPRを作成（`auto_draft_pr.yml`）。
+  - PRタイトル: `draft: #<issue-number> <issue-title>`、PR本文に `Refs #<issue-number>` を含む。
+  - 初期チェックリスト: 「タスク網羅性」「計画外作業の記載」をPR本文に含める。
+- 手動作成でも必須項目は同一
+  - 関連Issueの明記（`#<number>`）
+  - Draftで作成し、進捗に応じてReadyに変更
+- 計画外作業の取り扱い
+  - 一通り実装後、計画外作業があればPR本文の「計画外作業」一覧に追記
+  - 併せて元Issueにも反映（チェックリスト/説明/新規Issue作成）
+- 別問題の切り出し
+  - 関連だが別問題は新規Issueを作成し、当該PRや元Issueからリンク
+
+### 7.3 自動化（Actions 概要）
+- `ProjectV2: Add issues to roadmap`: Issueをユーザープロジェクト（ロードマップ）に自動追加
+- `ProjectV2: Sync status with issues`: Issueイベント（open/assign/label/close）に応じて Project の Status を更新
+- `PR: Auto create draft from branch`: ブランチPush時に、分岐規則に合致すればドラフトPRを自動作成し、関連Issueを In Progress に設定
+- PRテンプレート: `.github/pull_request_template.md`（関連Issue、タスク網羅性、計画外作業の明記を必須）
+
+運用ヒント
+- Projectのビューは「Group by: Milestone」「Filter: label:mvp or Milestone=M1/M2」「Sort by: priority/P*」を推奨
+- 依存関係の真実はIssue本文（Depends on）に集約し、Projectは可視化に専念
 
 ## 8. CI/CD の基本方針（GitHub Actions 想定）
 - PR: `lint` → `typecheck` → `unit` → `integration`（必要時）→ `build`

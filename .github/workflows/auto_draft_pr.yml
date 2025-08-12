@@ -1,0 +1,77 @@
+name: "PR: Auto create draft from branch"
+
+on:
+  push:
+    branches-ignore:
+      - main
+      - master
+
+jobs:
+  auto-draft-pr:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+    env:
+      DEFAULT_BASE: main
+      OWNER: motowo
+      PROJECT: '2'
+    steps:
+      - name: Detect branch and existing PR
+        id: detect
+        run: |
+          set -euo pipefail
+          BRANCH="${GITHUB_REF_NAME}"
+          echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
+          # Check if PR exists for this branch
+          EXIST=$(gh pr list --head "$BRANCH" --json number -q '.[0].number' || true)
+          echo "pr_number=${EXIST}" >> "$GITHUB_OUTPUT"
+          # Extract issue number from branch: issue-<n>, <n>-*, t-<n>, T-<n>
+          N=""
+          if [[ "$BRANCH" =~ issue-([0-9]+) ]]; then N="${BASH_REMATCH[1]}"; fi
+          if [[ -z "$N" && "$BRANCH" =~ ^([0-9]+)[-_] ]]; then N="${BASH_REMATCH[1]}"; fi
+          if [[ -z "$N" && "$BRANCH" =~ [tT]-([0-9]+) ]]; then N="${BASH_REMATCH[1]}"; fi
+          echo "issue_number=$N" >> "$GITHUB_OUTPUT"
+
+      - name: Create draft PR if not exists
+        if: steps.detect.outputs.pr_number == '' && steps.detect.outputs.issue_number != ''
+        id: create
+        env:
+          ISSUE: ${{ steps.detect.outputs.issue_number }}
+          BASE: ${{ env.DEFAULT_BASE }}
+        run: |
+          set -euo pipefail
+          # Compose title and body
+          TITLE=$(gh issue view "$ISSUE" --json title -q .title)
+          BODY=$(cat <<EOF
+Refs #$ISSUE
+
+このPRは自動作成されたドラフトPRです。関連Issue: #$ISSUE
+- [ ] タスク網羅性を確認（Issue内のチェックリストを反映）
+- [ ] 計画外の作業があれば本文に追記し、Issueにも反映
+EOF
+)
+          gh pr create --base "$BASE" --head "$GITHUB_REF_NAME" --title "draft: #$ISSUE $TITLE" --body "$BODY" --draft
+          NUM=$(gh pr list --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
+          echo "pr=$NUM" >> "$GITHUB_OUTPUT"
+
+      - name: Link PR to Project and set Issue status (In Progress)
+        if: steps.create.outputs.pr != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+          OWNER: ${{ env.OWNER }}
+          PROJECT: ${{ env.PROJECT }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ steps.detect.outputs.issue_number }}
+        run: |
+          set -euo pipefail
+          URL="https://github.com/$REPO/issues/$ISSUE"
+          # Ensure issue is in the project
+          existing=$(gh project item-list "$PROJECT" --owner "$OWNER" --format json | jq -r --arg url "$URL" '.[] | select(.content.type=="Issue" and .content.url==$url) | .id')
+          if [ -z "$existing" ]; then
+            existing=$(gh project item-add "$PROJECT" --owner "$OWNER" --url "$URL" --format json | jq -r '.id')
+          fi
+          # Set Status to In Progress if field exists
+          gh project item-edit "$PROJECT" --owner "$OWNER" --id "$existing" --field "Status" --name "In Progress" || true
+
