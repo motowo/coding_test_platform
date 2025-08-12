@@ -67,6 +67,12 @@
 - `pnpm coverage`
 \n+補足: 詳細なテスト戦略・ツール/フローは `docs/testing_strategy.md` を参照。
 
+### 5.0 開発フロー（実務/TDD適用）
+- 全体把握: 着手前に要件/設計/関連Issue/依存を把握し、開発計画（スコープ/分割/完了条件/テスト方針）を作成して PR 本文に記載
+- TDD原則: RED（失敗テスト作成）→ GREEN（最小実装）→ REFACTOR（恒常緑）で小さく反復
+- UI変更時: 可能であれば対象操作の E2E（Playwright）を追加し、スクリーンショット/動画/トレースを取得
+- プッシュ規律: ローカルで `lint`/`typecheck`/関連テストが緑であることを確認してからプッシュ（ドラフトPRに反映）
+
 ### 5.1 TDD（テスト駆動開発）のアプローチ
 - 採用方針: 本プロジェクトは原則 TDD を採用し、RED → GREEN → REFACTOR の短いサイクルで実装を進める。
 - サイクル
@@ -111,8 +117,11 @@
 
 ### 7.1 Issue 開始ルール（可視化と同期）
 - 開始の宣言
-  - 担当を割り当て（assign）、必要なら `status/in-progress` ラベルを付与（自動でProjectのStatusがIn Progressに同期）
+  - トリガー: Project の `Status=Todo`（または運用上の表記 `TODO`）の Issue のみ着手対象とする
+  - 担当を割り当て（assign）
+  - 着手直後に Project の `Status=In Progress` へ更新
   - Issue本文のチェックリスト（タスク）を見直し、抜けがあれば追記・分割（サブIssueを作成し親Issueにリンク）
+  - ブランチ作成→初回 push（ドラフトPR自動作成が有効な場合）。無効時は手動でドラフトPRを作成
 - ブランチ命名（Issue番号を必須に含める）
   - 例: `feat/issue-<number>-short-title`、`fix/issue-<number>-...`、`docs/issue-<number>-...`
   - 例: `feat/issue-27-problems-schema`（Issue #27 に対応）
@@ -134,12 +143,23 @@
 - 別問題の切り出し
   - 関連だが別問題は新規Issueを作成し、当該PRや元Issueからリンク
 
+#### 7.2.1 実装・コミット・プッシュのタイミング
+- 実装開始はドラフトPR作成後（Issue の `Status=In Progress` を維持）
+- 小さな単位でコミット（テスト/実装/リファクタ）。コミット本文に `refs #<issue-number>` を付与
+- ローカルで `lint`/`typecheck`/関連テストを実行し緑であることを確認
+- 最初に作成したテストを含む関連テストが緑になったらプッシュ（ドラフトPRを更新）
+- UI変更時は E2E を可能な限り追加・実行し、スクリーンショット/動画/トレースを取得のうえ PR に添付
+
 ### 7.3 自動化（Actions 概要）
 - `ProjectV2: Add issues to roadmap`: Issueをユーザープロジェクト（ロードマップ）に自動追加
 - `ProjectV2: Sync status with issues`: Issueイベント（open/assign/label/close）に応じて Project の Status を更新
 - `PR: Auto create draft from branch`: ブランチPush時に、分岐規則に合致すればドラフトPRを自動作成し、関連Issueを In Progress に設定
 - PRテンプレート: `.github/pull_request_template.md`（関連Issue、タスク網羅性、計画外作業の明記を必須）
 - `Issues: Auto manage 'blocked' label by dependencies`: Issue本文の「Depends on: #…」や Issueリンクに基づき、依存が未完のタスクへ `blocked` ラベルを自動付与/解除（詳細: `docs/09_issue_automation.md`）
+
+#### 7.3.2 UI変更時の成果物添付方針
+- 可能な限り、Playwright のスクリーンショット/動画/トレースを PR に添付（CI 実行時は Artifacts を参照）
+- 主要画面の Before/After を提示し、レビュー効率を高める
 
 #### 7.3.1 依存関係（Depends on）記法と運用ルール
 - 正準記法（本文）
@@ -219,7 +239,7 @@ flowchart TD
 - [ ] Issue本文の「Depends on」が全て Done/Closed を確認（未完了なら着手しない）
 - [ ] 自分に assign、必要なら `status/in-progress` を付与
 - [ ] ブランチ作成→push（ドラフトPR自動作成）
-- [ ] PR本文の「タスク網羅性」「計画外作業」欄を更新
+- [ ] PR本文の「開発計画（スコープ/分割/完了条件/テスト方針）」「タスク網羅性」「計画外作業」欄を更新
 
 ## 8. CI/CD の基本方針（GitHub Actions 想定）
 - PR: `lint` → `typecheck` → `unit` → `integration`（必要時）→ `build`
