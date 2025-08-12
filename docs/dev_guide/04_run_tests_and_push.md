@@ -12,10 +12,11 @@
 - プッシュによりドラフトPRが更新される
 
 ## 手順
-1) ローカル検証
-- `pnpm lint` / `pnpm format:check`
-- `pnpm typecheck`
-- 必要なテスト: `pnpm test:unit` / `pnpm test:integration` / `pnpm test:e2e`
+1) ローカル検証（Docker内で実行）
+- `docker compose run --rm web npm run lint`
+- `docker compose run --rm web npm run type-check`
+- `docker compose run --rm web npm test`
+- API側: `docker compose run --rm api npm run lint && docker compose run --rm api npm run type-check`
 
 2) プッシュ
 - 緑であることを確認後、ブランチへ push
@@ -24,12 +25,13 @@
   - フォークPR等: integration/E2E は条件付き
 
 ## チェックリスト
-- [ ] lint/format/typecheck を通過
-- [ ] RED起点のテスト群が緑
+- [ ] Docker内でlint/typecheck を通過
+- [ ] Docker内でRED起点のテスト群が緑
 - [ ] push 済み、ドラフトPR更新を確認
 
 ## よくある落とし穴
-- ローカル未確認で push → CI落ちで手戻り
+- Docker環境での未確認でpush → CI落ちで手戻り
+- ローカル環境とDocker環境の差異 → 依存関係やNode.jsバージョンの相違
 - テストのスコープ過不足 → 実行時間/信頼性の不均衡
 
 ## 関連リンク

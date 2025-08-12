@@ -24,6 +24,18 @@
 
 ## 手順
 1) 対象選定（Project）
+- **Project Status=Todo の確認手順**:
+  ```bash
+  # Method 1: Project一覧からTodoタスクを確認
+  gh project item-list 2 --owner motowo --format json | \
+    jq -r '.items[] | select(.fieldValues[]?.name == "Todo") | "#\(.content.number)\t\(.content.title)"' 2>/dev/null
+  
+  # Method 2: フォールバック - 未assignで開発可能なタスク
+  gh issue list --state open --no-assignee --label "mvp" --limit 10
+  
+  # Method 3: 特定Issueの詳細確認（例: Issue #6 = T-002）
+  gh issue view 6 --json body,title,assignees,state,labels
+  ```
 - Project ビューで `Status=Todo` を抽出し、優先度/Milestone/label:mvp を考慮して対象を選ぶ
 - Issue 本文の `Depends on:` と Issueリンク（is blocked by）を確認
   - 依存先が未完（Open）または不明（権限不足等）の場合は開始しない（`blocked` が自動付与され得る）
