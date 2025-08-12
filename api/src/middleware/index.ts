@@ -2,6 +2,9 @@ import { FastifyInstance } from 'fastify'
 import { config } from '../utils/config'
 
 export async function setupMiddleware(server: FastifyInstance) {
+  // Sensible plugin for common utilities including httpErrors
+  await server.register(import('@fastify/sensible'))
+
   // CORS
   await server.register(import('@fastify/cors'), {
     origin: config.cors.origin,

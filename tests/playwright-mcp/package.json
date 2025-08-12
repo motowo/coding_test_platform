@@ -1,0 +1,17 @@
+{
+  "name": "playwright-mcp",
+  "version": "1.0.0",
+  "description": "Playwright MCP for testing",
+  "main": "index.js",
+  "scripts": {
+    "test": "npx playwright test",
+    "mcp": "node ../mcp-playwright-server.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0",
+    "playwright": "^1.41.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.41.0"
+  }
+}
