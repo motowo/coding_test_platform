@@ -1,0 +1,87 @@
+name: ProjectV2: Add issues to roadmap
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: backfill or single
+        required: true
+        default: backfill
+      issue_number:
+        description: Single issue number when mode=single
+        required: false
+  issues:
+    types: [opened, reopened]
+
+env:
+  PROJECT_OWNER_LOGIN: motowo
+  PROJECT_NUMBER: '2'
+
+jobs:
+  add-to-project:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare issue list
+        id: prep
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+        run: |
+          set -euo pipefail
+          REPO="$GITHUB_REPOSITORY"
+          MODE="${{ github.event_name == 'issues' && 'single' || inputs.mode }}"
+          if [ "$MODE" = "single" ]; then
+            NUM="${{ github.event.issue.number || inputs.issue_number }}"
+            echo "numbers=$NUM" >> "$GITHUB_OUTPUT"
+          else
+            # backfill all open issues (epic+tasks)
+            gh api repos/$REPO/issues --paginate -q '.[].number' > issue_numbers.txt
+            echo "numbers=$(paste -sd, issue_numbers.txt)" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve Project and Status field
+        id: proj
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+        run: |
+          set -euo pipefail
+          OWNER_LOGIN="$PROJECT_OWNER_LOGIN"
+          PROJECT_NUMBER="$PROJECT_NUMBER"
+          # Get ProjectV2 id and Status field id + option id for Todo
+          jqQuery='query($login:String!,$number:Int!){ user(login:$login){ projectV2(number:$number){ id fields(first:50){ nodes{ id name __typename ... on ProjectV2SingleSelectField { options { id name } } } } } } }'
+          resp=$(gh api graphql -f login="$OWNER_LOGIN" -F number="$PROJECT_NUMBER" -f query="$jqQuery")
+          projectId=$(echo "$resp" | jq -r '.data.user.projectV2.id')
+          statusFieldId=$(echo "$resp" | jq -r '.data.user.projectV2.fields.nodes[] | select(.name=="Status") | .id')
+          todoOptionId=$(echo "$resp" | jq -r '.data.user.projectV2.fields.nodes[] | select(.name=="Status") | .options[] | select(.name=="Todo") | .id')
+          echo "projectId=$projectId" >> "$GITHUB_OUTPUT"
+          echo "statusFieldId=$statusFieldId" >> "$GITHUB_OUTPUT"
+          echo "todoOptionId=$todoOptionId" >> "$GITHUB_OUTPUT"
+
+      - name: Add issues to project and set Status=Todo
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+          REPO: ${{ github.repository }}
+          PROJECT_ID: ${{ steps.proj.outputs.projectId }}
+          STATUS_FIELD_ID: ${{ steps.proj.outputs.statusFieldId }}
+          TODO_OPTION_ID: ${{ steps.proj.outputs.todoOptionId }}
+          NUMBERS: ${{ steps.prep.outputs.numbers }}
+        run: |
+          set -euo pipefail
+          IFS=',' read -r -a nums <<< "$NUMBERS"
+          for n in "${nums[@]}"; do
+            # Get issue node id
+            node=$(gh api graphql -f query='query($o:String!,$r:String!,$n:Int!){ repository(owner:$o,name:$r){ issue(number:$n){ id } } }' -f o="${REPO%/*}" -f r="${REPO#*/}" -F n="$n" -q .data.repository.issue.id)
+            # Add to project
+            item=$(gh api graphql -f query='mutation($p:ID!,$c:ID!){ addProjectV2ItemById(input:{projectId:$p,contentId:$c}){ item { id } } }' -f p="$PROJECT_ID" -f c="$node" -q .data.addProjectV2ItemById.item.id)
+            # Set Status to Todo if available
+            if [ -n "$STATUS_FIELD_ID" ] && [ -n "$TODO_OPTION_ID" ] && [ "$STATUS_FIELD_ID" != "null" ] && [ "$TODO_OPTION_ID" != "null" ]; then
+              gh api graphql -f query='mutation($p:ID!,$i:ID!,$f:ID!,$o:ID!){ updateProjectV2ItemFieldValue(input:{projectId:$p,itemId:$i,fieldId:$f,value:{singleSelectOptionId:$o}}){ clientMutationId }}' -f p="$PROJECT_ID" -f i="$item" -f f="$STATUS_FIELD_ID" -f o="$TODO_OPTION_ID" >/dev/null || true
+            fi
+            echo "Added #$n -> item $item"
+          done
+
