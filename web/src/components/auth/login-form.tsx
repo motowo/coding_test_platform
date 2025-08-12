@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,7 +13,7 @@ interface LoginFormData {
   password: string
 }
 
-export function LoginForm() {
+function LoginFormInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const [formData, setFormData] = useState<LoginFormData>({
@@ -206,5 +206,13 @@ export function LoginForm() {
         </div>
       </div>
     </form>
+  )
+}
+
+export function LoginForm() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginFormInner />
+    </Suspense>
   )
 }

@@ -13,6 +13,23 @@ COPY package*.json ./
 RUN npm ci
 
 # =================================================================
+# Development stage
+FROM node:20-alpine AS development
+WORKDIR /app
+
+# Copy dependencies
+COPY --from=deps /app/node_modules ./node_modules
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Development command
+CMD ["npm", "run", "dev"]
+
+# =================================================================
 # Builder stage
 FROM node:20-alpine AS builder
 WORKDIR /app

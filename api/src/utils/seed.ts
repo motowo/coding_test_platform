@@ -9,7 +9,7 @@ async function seed() {
     logger.info('🌱 Starting database seeding...')
 
     // Clear existing data in development
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env['NODE_ENV'] === 'development') {
       logger.info('🧹 Clearing existing data...')
       await prisma.submission.deleteMany()
       await prisma.candidateAssessment.deleteMany()
@@ -76,7 +76,7 @@ async function seed() {
     logger.info('👥 Creating users...')
     const passwordHash = await bcrypt.hash('password123', 12)
 
-    const admin = await prisma.user.create({
+    await prisma.user.create({
       data: {
         name: 'System Administrator',
         email: 'admin@skillgaug.local',
@@ -166,7 +166,7 @@ async function seed() {
       },
     })
 
-    const webDev = await prisma.skillNode.create({
+    await prisma.skillNode.create({
       data: {
         skillMapId: skillMap.id,
         name: 'Web Development',
@@ -486,7 +486,7 @@ Thank you for your interest in our company!`,
 
     // 8. Create Sample Candidate Assessment
     logger.info('👤 Creating sample candidate assessment...')
-    const candidateAssessment = await prisma.candidateAssessment.create({
+    await prisma.candidateAssessment.create({
       data: {
         assessmentId: assessment.id,
         candidateId: candidates[0]!.id,
@@ -523,7 +523,7 @@ Thank you for your interest in our company!`,
   - Candidate: john.doe@example.com / password123`)
 
   } catch (error) {
-    logger.error('❌ Database seeding failed:', error)
+    logger.error(error as Error, '❌ Database seeding failed')
     throw error
   } finally {
     await prisma.$disconnect()

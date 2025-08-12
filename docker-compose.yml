@@ -33,8 +33,9 @@ services:
   # API Server (Fastify)
   skillgaug-api:
     build:
-      context: ./api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: api/Dockerfile
+      target: development
     container_name: skillgaug-api-1
     restart: unless-stopped
     environment:
@@ -48,7 +49,8 @@ services:
       - "4000:4000"
     volumes:
       - ./api:/app
-      - api_node_modules:/app/node_modules
+      - /app/node_modules
+      - /app/database
     depends_on:
       - skillgaug-db
       - skillgaug-redis
@@ -60,6 +62,7 @@ services:
     build:
       context: ./web
       dockerfile: Dockerfile
+      target: development
     container_name: skillgaug-web-1
     restart: unless-stopped
     environment:
@@ -71,7 +74,7 @@ services:
       - "3000:3000"
     volumes:
       - ./web:/app
-      - web_node_modules:/app/node_modules
+      - /app/node_modules
     depends_on:
       - skillgaug-api
     networks:
@@ -115,10 +118,6 @@ volumes:
   postgres_data:
     driver: local
   redis_data:
-    driver: local
-  api_node_modules:
-    driver: local
-  web_node_modules:
     driver: local
   playwright_browsers:
     driver: local

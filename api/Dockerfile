@@ -5,17 +5,19 @@
 
 # Development stage
 FROM node:20-alpine AS development
+RUN apk add --no-cache openssl libc6-compat
 WORKDIR /app
 
-# Install dependencies
-COPY package*.json ./
-RUN npm ci
+# Install dependencies including devDependencies for development
+COPY ./api/package*.json ./
+RUN npm ci --include=dev
 
-# Copy source code
-COPY . .
+# Copy source code and database schema
+COPY ./api/ .
+COPY ./database/ ./database/
 
 # Generate Prisma client
-RUN npx prisma generate
+RUN npx prisma generate --schema=./database/schema.prisma
 
 # Expose port
 EXPOSE 4000
@@ -29,12 +31,15 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 # Install dependencies
-COPY package*.json ./
+COPY ./api/package*.json ./
 RUN npm ci
 
-# Copy source code and build
-COPY . .
-RUN npx prisma generate
+# Copy source code and database schema
+COPY ./api/ .
+COPY ./database/ ./database/
+
+# Generate Prisma client and build
+RUN npx prisma generate --schema=./database/schema.prisma
 RUN npm run build
 
 # =================================================================
@@ -47,7 +52,7 @@ RUN addgroup -g 1001 -S nodejs
 RUN adduser -S skillgaug -u 1001
 
 # Install production dependencies only
-COPY package*.json ./
+COPY ./api/package*.json ./
 RUN npm ci --only=production && npm cache clean --force
 
 # Copy built application and Prisma schema

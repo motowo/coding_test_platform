@@ -13,16 +13,6 @@ const redis = new Redis(config.redis.url)
 const server = fastify({
   logger: {
     level: config.log.level,
-    ...(config.isDevelopment && {
-      transport: {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'HH:MM:ss.l',
-          ignore: 'pid,hostname',
-        },
-      },
-    }),
   },
 })
 

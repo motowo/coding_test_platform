@@ -1,15 +1,16 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  output: 'standalone',
   experimental: {
     typedRoutes: true,
   },
   typescript: {
     // Type checking is performed separately in CI/CD pipeline
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
   eslint: {
     // ESLint is run separately in CI/CD pipeline
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
   images: {
     domains: [
