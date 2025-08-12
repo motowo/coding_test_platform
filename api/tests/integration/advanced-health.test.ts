@@ -113,6 +113,7 @@ describe('Advanced Health Check with External Services', () => {
       expect(response.json()).toEqual({
         status: 'ready',
         timestamp: expect.any(String),
+        version: expect.any(String),
         checks: {
           database: 'ready',
           redis: 'ready'
@@ -133,6 +134,7 @@ describe('Advanced Health Check with External Services', () => {
       expect(response.json()).toEqual({
         status: 'alive',
         timestamp: expect.any(String),
+        version: expect.any(String),
         uptime: expect.any(Number)
       })
     })

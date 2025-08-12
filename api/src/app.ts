@@ -25,84 +25,78 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
     app.decorate('redis', options.redis)
   }
 
+  // Common response helpers
+  const getAppMetadata = () => ({
+    timestamp: new Date().toISOString(),
+    version: process.env['npm_package_version'] || '1.0.0'
+  })
+
   // Basic health check endpoint
   app.get('/health', async () => {
     return {
       status: 'ok',
-      timestamp: new Date().toISOString(),
-      version: process.env['npm_package_version'] || '1.0.0'
+      ...getAppMetadata()
     }
   })
 
   // Detailed health check with external services
   app.get('/health/detailed', async (request, reply) => {
-    const startTime = Date.now()
-    const timestamp = new Date().toISOString()
-    const version = process.env['npm_package_version'] || '1.0.0'
+    const metadata = getAppMetadata()
     const uptime = process.uptime()
 
     try {
-      const services: any = {}
+      const services: Record<string, any> = {}
       let hasUnhealthyService = false
 
-      // Check database if available
-      if (options.prisma) {
-        const dbStart = Date.now()
+      // Helper function to check service health
+      const checkService = async (
+        name: string,
+        checkFn: () => Promise<void>
+      ): Promise<void> => {
+        const start = Date.now()
         try {
-          await options.prisma.$queryRaw`SELECT 1`
-          services.database = {
+          await checkFn()
+          services[name] = {
             status: 'healthy',
-            responseTimeMs: Date.now() - dbStart
+            responseTimeMs: Date.now() - start
           }
         } catch (error: any) {
-          services.database = {
+          services[name] = {
             status: 'unhealthy',
             error: error.message
           }
           hasUnhealthyService = true
         }
+      }
+
+      // Check database if available
+      if (options.prisma) {
+        await checkService('database', () => options.prisma!.$queryRaw`SELECT 1`)
       }
 
       // Check Redis if available
       if (options.redis) {
-        const redisStart = Date.now()
-        try {
-          await options.redis.ping()
-          services.redis = {
-            status: 'healthy',
-            responseTimeMs: Date.now() - redisStart
-          }
-        } catch (error: any) {
-          services.redis = {
-            status: 'unhealthy',
-            error: error.message
-          }
-          hasUnhealthyService = true
-        }
+        await checkService('redis', () => options.redis!.ping())
       }
 
-      // Return unhealthy status if any service is unhealthy
+      const responseData = {
+        status: hasUnhealthyService ? 'unhealthy' : 'healthy',
+        ...metadata,
+        services
+      }
+
       if (hasUnhealthyService) {
-        return reply.status(503).send({
-          status: 'unhealthy',
-          timestamp,
-          version,
-          services
-        })
+        return reply.status(503).send(responseData)
       }
 
       return {
-        status: 'healthy',
-        timestamp,
-        version,
-        services,
+        ...responseData,
         uptime
       }
     } catch (error: any) {
       return reply.status(503).send({
         status: 'unhealthy',
-        timestamp,
-        version,
+        ...metadata,
         error: error.message
       })
     }
@@ -110,7 +104,7 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
 
   // Readiness probe endpoint
   app.get('/health/readiness', async (request, reply) => {
-    const timestamp = new Date().toISOString()
+    const metadata = getAppMetadata()
     const checks: any = {}
 
     try {
@@ -128,7 +122,7 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
 
       return {
         status: 'ready',
-        timestamp,
+        ...metadata,
         checks
       }
     } catch (error: any) {
@@ -137,7 +131,7 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
       
       return reply.status(503).send({
         status: 'not ready',
-        timestamp,
+        ...metadata,
         checks
       })
     }
@@ -147,7 +141,7 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
   app.get('/health/liveness', async () => {
     return {
       status: 'alive',
-      timestamp: new Date().toISOString(),
+      ...getAppMetadata(),
       uptime: process.uptime()
     }
   })
@@ -157,7 +151,7 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
     const environment = process.env['NODE_ENV'] || 'development'
     
     return {
-      version: process.env['npm_package_version'] || '1.0.0',
+      ...getAppMetadata(),
       environment,
       features: {
         authentication: false, // Not implemented yet

@@ -24,6 +24,7 @@ describe('Application Configuration', () => {
 
       expect(response.statusCode).toBe(200)
       expect(response.json()).toEqual({
+        timestamp: expect.any(String),
         version: expect.any(String),
         environment: expect.stringMatching(/^(development|production|test)$/),
         features: {
