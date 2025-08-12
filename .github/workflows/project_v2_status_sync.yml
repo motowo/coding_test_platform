@@ -1,0 +1,86 @@
+name: "ProjectV2: Sync status with issues"
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: Issue number to sync
+        required: true
+      status:
+        description: Status to set (Todo/In Progress/Done)
+        required: true
+        default: Todo
+  issues:
+    types: [opened, reopened, closed, labeled, assigned]
+
+env:
+  PROJECT_OWNER_LOGIN: motowo
+  PROJECT_NUMBER: '2'
+
+jobs:
+  sync-status:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      contents: read
+    steps:
+      - name: Determine context
+        id: ctx
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "issue=${{ inputs.issue_number }}" >> "$GITHUB_OUTPUT"
+            echo "status=${{ inputs.status }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "issue=${{ github.event.issue.number }}" >> "$GITHUB_OUTPUT"
+            action='${{ github.event.action }}'
+            label='${{ github.event.label.name }}'
+            case "$action" in
+              opened|reopened)
+                echo "status=Todo" >> "$GITHUB_OUTPUT"
+                ;;
+              closed)
+                echo "status=Done" >> "$GITHUB_OUTPUT"
+                ;;
+              labeled)
+                case "$label" in
+                  status/in-progress|status:in-progress|status-in-progress)
+                    echo "status=In Progress" >> "$GITHUB_OUTPUT" ;;
+                  status/todo|status:todo|status-todo)
+                    echo "status=Todo" >> "$GITHUB_OUTPUT" ;;
+                  status/done|status:done|status-done)
+                    echo "status=Done" >> "$GITHUB_OUTPUT" ;;
+                  *) echo "status=" >> "$GITHUB_OUTPUT" ;;
+                esac
+                ;;
+              assigned)
+                echo "status=In Progress" >> "$GITHUB_OUTPUT"
+                ;;
+              *) echo "status=" >> "$GITHUB_OUTPUT" ;;
+            esac
+          fi
+
+      - name: Ensure item in project and set status
+        if: steps.ctx.outputs.status != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+          OWNER: ${{ env.PROJECT_OWNER_LOGIN }}
+          PROJECT: ${{ env.PROJECT_NUMBER }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ steps.ctx.outputs.issue }}
+          STATUS_NAME: ${{ steps.ctx.outputs.status }}
+        run: |
+          set -euo pipefail
+          # Resolve issue URL
+          URL="https://github.com/$REPO/issues/$ISSUE"
+          # Lookup existing item in the project
+          existing=$(gh project item-list "$PROJECT" --owner "$OWNER" --format json | jq -r --arg url "$URL" '.[] | select(.content.type=="Issue" and .content.url==$url) | .id')
+          if [ -z "$existing" ]; then
+            # Add item to project
+            existing=$(gh project item-add "$PROJECT" --owner "$OWNER" --url "$URL" --format json | jq -r '.id')
+            echo "Added to project: $URL -> $existing"
+          else
+            echo "Found existing item: $existing"
+          fi
+          # Set Status field (if exists in the project)
+          gh project item-edit "$PROJECT" --owner "$OWNER" --id "$existing" --field "Status" --name "$STATUS_NAME" || echo "Status field not set (may not exist)"
+
