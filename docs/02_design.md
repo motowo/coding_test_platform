@@ -12,55 +12,42 @@
 
 | 構成要素 | 採用技術/アプローチ | 理由・根拠 |
 | :--- | :--- | :--- |
-| **アプリケーション実行基盤** | **Kubernetes (k8s)** | コンテナ化されたマイクロサービスのデプロイ、スケーリング、自己修復を自動化するため。特定のクラウドに依存しないポータビリティも確保できる。 |
-| **データベース (RDB)** | **外部マネージドサービス (AWS RDS等)** | **データの安全性と運用負荷軽減のため。** バックアップ、パッチ適用、高可用性構成といった複雑なDB運用を専門のサービスに委任することで、堅牢性を高め、開発者の負担を大幅に削減する。 |
-| **インメモリキャッシュ (Redis)** | **外部マネージドサービス (AWS ElastiCache等)** | **RDBと同様、ステートフルなコンポーネントであるため。** Kubernetesクラスタはステートレスなアプリの実行環境と割り切り、ライフサイクルが異なるデータストアはクラスタ外で管理するのが安全かつ効率的です。k8s内でStatefulSetを用いて構築することも可能ですが、マネージドサービスを利用する方が、特に小規模なチームにおいては運用負荷とリスクの観点からメリットが大きいと判断しました。 |
+| **アプリケーション実行基盤** | **Docker + Docker Compose** | 単一/少数サーバでのシンプル運用と開発生産性を重視。コンテナで責務を分離し、Compose で起動順・ネットワーク・環境変数を一元管理する。将来の拡張で k8s へ段階移行可能（非前提）。 |
+| **データベース (RDB)** | **PostgreSQL（Composeで起動）／本番は外部マネージドも可** | 既定は Compose での Postgres 運用。SLA/運用要件に応じ、本番のみ RDS 等のマネージドへスイッチ可能に設計。 |
+| **インメモリキャッシュ (Redis)** | **Redis（Composeで起動）／本番は外部マネージドも可** | 既定は Compose での Redis 運用。負荷/運用体制により、本番でのマネージド移行を許容。 |
 | **サービス分割** | **マイクロサービスアーキテクチャ** | User, Problem, Submission, Scoringといった単位でサービスを分割。各機能が独立しているため、障害の影響範囲を限定し、チームごとの自律的な開発・デプロイを促進する。 |
 
 ## 1. システム構成
 
-本プラットフォームは、Kubernetes上で動作するマイクロサービスアーキテクチャを採用する。各サービスはコンテナ化され、スケーラビリティと可用性を確保する。コードの実行は、採点要求ごとに動的に生成される隔離されたPod内で安全に実行される。
+本プラットフォームは、Docker コンテナを Docker Compose で編成したサービス群として稼働する。各サービスは専用コンテナで分離され、ネットワーク/ボリューム/環境変数を Compose で宣言管理する。コードの実行は、採点要求ごとにホストの Docker デーモン上で隔離コンテナを都度起動して安全に実行する。
 
 ### 1.1. アーキテクチャ図 (Mermaid)
 
 ```mermaid
 graph TD
-    subgraph "ユーザー"
-        A["ブラウザ (Next.js)"]
+    subgraph User[ユーザー]
+        A[ブラウザ/Next.js]
     end
 
-    subgraph "インフラストラクチャ (AWS/GCP)"
-        B["API Gateway / Ingress"]
+    subgraph Compose[Docker Compose ネットワーク]
+        B[Web: Next.js]
+        C[API: Fastify]
+        D[PostgreSQL]
+        E[Redis]
+        F[Scoring Service]
+    end
 
-        subgraph "Kubernetes Cluster (EKS/GKE)"
-            C["User Service (Pod)"]
-            D["Problem Service (Pod)"]
-            E["Submission Service (Pod)"]
-            F["Scoring Service (Pod)"]
-            F -- k8s Jobを作成 --> G["Scoring Job (Pod)"]
-        end
-
-        H["PostgreSQL (RDS)"]
-        I["Redis (ElastiCache等)"]
-        J["Event Stream (Kafka/Kinesis)"]
-        K["Data Warehouse (BigQuery/Redshift)"]
+    subgraph Docker[ホストの Docker デーモン]
+        G[[Scoring Runner: 一時コンテナ]]
     end
 
     A --> B
-
     B --> C
-    B --> D
-    B --> E
-
-    C --> H
-    D --> H
-    E --> H
-    E --> I
-    E -- 提出イベント --> J
-
-    E -- 採点要求 --> F
-    G -- 結果保存 --> H
-    G -- 採点イベント --> J
+    C --> D
+    C --> E
+    C -- 採点要求 --> F
+    F -- run container --> G
+    G -- 結果保存 --> D
 ```
 
 ### 1.2. コンポーネント説明
@@ -68,17 +55,13 @@ graph TD
 | コンポーネント | 説明 |
 | :--- | :--- |
 | **ブラウザ (Next.js)** | ReactベースのNext.jsを使用し、SSR/SSG/ISRおよびRSCを活用した拡張性・保守性の高いUIを提供する。 |
-| **API Gateway / Ingress** | 全てのリクエストの窓口。認証、ルーティング、レートリミット等を担当。KubernetesのIngress Controllerと連携する。 |
-| **User Service** | ユーザー情報の管理、認証、権限管理を行う。k8s上のPodとしてデプロイされる。 |
-| **Problem Service** | コーディング問題、テストケース、カテゴリ、難易度の管理を行う。k8s上のPodとしてデプロイされる。 |
-| **Submission Service** | 候補者からのコード提出を受け付け、DBに保存。リプレイデータはRedisに記録する。k8s上のPodとしてデプロイされる。 |
-| **Scoring Service** | 提出されたコードの採点要求を管理する。要求ごとに、隔離された**Kubernetes Job**を生成し、その中でサンドボックス化されたPodがコードを実行・採点する。 |
-| **Scoring Job (Pod)** | `Scoring Service`によって動的に作成される一時的なPod。特定の提出コードを安全な環境で実行し、結果を返す責務を持つ。 |
-| **Kubernetes Cluster** | EKS (AWS), GKE (GCP) などのマネージドk8sサービス。各マイクロサービスのコンテナをPodとして実行し、デプロイ、スケーリング、監視を自動化する。 |
-| **PostgreSQL (RDS)** | ユーザー、問題、提出結果などの構造化データを格納するプライマリデータベース。 |
-| **Redis (ElastiCache等)** | コーディングのリプレイデータなど、高速な読み書きが必要な時系列データを格納する。マネージドサービスの利用を推奨。 |
-| **Event Stream** | ユーザー操作や採点結果などのイベントを収集し、データ分析基盤へ連携する。 |
-| **Data Warehouse** | 集約されたイベントデータを格納し、分析クエリを実行するための基盤。 |
+| **Web (Next.js)** | フロントエンドUI。SSR/ISR/RSCの運用選択は段階導入。Compose サービスとして起動。 |
+| **API (Fastify)** | 認証/権限/問題・提出のCRUD/採点要求の受付。Compose サービスとして起動。 |
+| **Scoring Service** | 採点要求を受け取り、ホストのDockerに対して一時コンテナ（Scoring Runner）を起動し、結果を収集してDBへ反映。 |
+| **Scoring Runner (一時コンテナ)** | 言語ランタイム/採点用ツール群を内包し、単一提出を隔離実行する短命コンテナ。完了後に削除。 |
+| **PostgreSQL** | 構造化データの保存。開発/検証は Compose、運用ではマネージド移行も可。 |
+| **Redis** | リプレイやキューイング等の短期データ。開発/検証は Compose、運用ではマネージド移行も可。 |
+| **（任意）イベント基盤/分析** | 将来のPost-MVPで導入。現段階では必須ではない。 |
 
 ## 2. 技術スタック
 
@@ -87,8 +70,8 @@ graph TD
 | **フロントエンド** | Next.js (React), TypeScript | 長期運用での人材確保/学習コスト低減、SSR/ISR/RSCなど運用選択肢の広さ、豊富なエコシステムのため。 |
 | **バックエンド (API)** | Node.js, Fastify, TypeScript | 軽量で高速なWebフレームワークと型システムにより、生産性とパフォーマンスを両立するため。 |
 | **データベース** | PostgreSQL, Redis | 堅牢なリレーショナルDBと、高速なインメモリDBを特性に応じて使い分けるため。 |
-| **コンテナ技術** | Docker, **Kubernetes** | セキュアなコード実行環境と、宣言的なデプロイ、自己修復、水平スケーリングを実現するため。 |
-| **インフラ** | AWS / GCP | マネージドサービス（EKS, RDS, ElastiCache等）を活用し、運用負荷を軽減するため。 |
+| **コンテナ技術** | Docker, **Docker Compose** | ローカル/本番を通じた一貫運用と起動容易性。小規模構成での低運用負荷を重視。将来のk8s移行余地は確保。 |
+| **インフラ** | 単一/少数サーバ（IaaS/オンプレ） | 既定はCompose運用。本番のみデータストアにマネージド採用も可（RDS/ElastiCache等）。 |
 | **イベント基盤** | Apache Kafka / AWS Kinesis | 非同期処理とデータ分析基盤への連携を実現するため。 |
 
 ### 2.1. 技術選定の過程（判断基準）
@@ -158,12 +141,11 @@ graph TD
 
 結論（BE）:
 - API面は「Node.js + Fastify + TypeScript」を推奨。チーム規模拡大やモノレポ管理が前提なら「NestJS」を選択肢とする。
-- 採点ワーカーはポリグロットを許容: APIはNodeで維持しつつ、CPU/隔離要件が強ければワーカーをGo/Rustで実装する構成も適合。
+- 採点ワーカーはポリグロットを許容: APIはNodeで維持しつつ、CPU/隔離要件が強ければワーカーをGo/Rustで実装する構成も適合。Compose 上でのマルチイメージ運用を前提とする。
 
 ### 2.4. 選定結果と却下理由（ADR要約）
 
-- 採用: FE=SvelteKit(+TS), BE API=Fastify(+TS), 採点=K8s Job（ワーカー言語は将来選択可）
-- 採用: FE=Next.js(+TS), BE API=Fastify(+TS), 採点=K8s Job（ワーカー言語は将来選択可）
+- 採用: FE=Next.js(+TS), BE API=Fastify(+TS), 採点=Docker一時コンテナ（言語ランタイムは用途別イメージ）
 - 却下（MVP段階）:
   - Angular/Spring Boot: 速度と過剰性の観点でMVPには重い
   - Rust全面採用: 学習コスト→納期リスクが高い
@@ -173,6 +155,7 @@ graph TD
 影響/トレードオフ:
 - 現行選定はDXと速度を優先。将来の高負荷に対しては、採点ワーカーをGo/Rustへ脱着可能とすることでリスクを低減。
 - モノリス→マイクロサービスの移行は、Fastify構成でもモジュラリティを維持しておくことで段階的に対応可能。
+- 運用形態は Compose を既定とし、必要時に k8s へ段階移行可能な構成（12-factor、コンテナ境界の明確化）とする。
 
 ### 2.5. フロントエンドCSS戦略の比較と選定
 

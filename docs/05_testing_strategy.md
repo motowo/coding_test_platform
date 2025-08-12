@@ -52,17 +52,17 @@
   - e2e（run-e2e ラベル時のみ。デフォルト不実行）
 - 失敗時は早期中断、Artifacts（レポート/スクショ）を保存
 
-## 6. Playwright と MCP の計画
-- ベースライン（現行）
+## 6. Playwright と MCP（開発環境のみ）
+- ベースライン（CI/公開）
   - Playwright を単体で運用（レポート/スクショ/動画/トレースは Actions Artifacts へ）
   - 実行トリガ: `run-e2e` ラベル、またはスケジュール（将来）
-- MCP 連携（将来）
+- 開発環境（ローカル）での MCP 連携（任意）
   - 目的: スクショ/動画/トレースの収集・閲覧・共有の効率化
-  - 設計: Playwright Reporter → MCP Client Adapter → MCP サービス（API）
-  - 環境トグル（例）: `E2E_USE_MCP=true`, `MCP_ENDPOINT`, `MCP_API_KEY`
+  - 設計: Playwright Reporter → MCP Client Adapter → MCP サービス（Playwright MCP）
+  - 環境トグル（例）: `E2E_USE_MCP=true`, `MCP_PLAYWRIGHT_ENDPOINT`
   - 非連携時はデフォルトReporterでArtifacts出力（フォールバック）
 - 分離方針
-  - MCP は任意機能。E2E は MCP 無しで自律実行可能に設計（CI/ローカル）
+  - MCP は開発限定の任意機能。E2E は MCP 無しで自律実行可能に設計（CI/本番）
 
 ## 7. データ/フィクスチャ設計
 - Factory + Builder パターンでテストデータ生成（ドメイン語彙を保つ）
