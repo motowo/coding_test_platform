@@ -142,6 +142,70 @@
 - Projectのビューは「Group by: Milestone」「Filter: label:mvp or Milestone=M1/M2」「Sort by: priority/P*」を推奨
 - 依存関係の真実はIssue本文（Depends on）に集約し、Projectは可視化に専念
 
+### 7.4 タスク開始ガイド（自動選択を含む）
+原則
+- Issue に存在しないタスクは実行しない（No Issue, No Work）。新規や変更が発生した場合は、必ず Issue を作成/更新してから着手する。
+- 依存関係（Depends on）が未解決のタスクは開始しない。必要に応じて依存タスクを先に着手する。
+
+開始対象の選び方（優先順位の判断基準）
+1) ステータス: Project の `Status=Todo`
+2) 期間: 直近の Milestone（例: M1→M2 の順）
+3) スコープ: `label:mvp` を優先
+4) 優先度: `priority/P1` → `P2` → `P3`
+5) 依存関係: Issue本文の「Depends on: #…」の参照先が Done/Closed であること
+6) 負荷分散/担当: 未アサイン or 自分が担当
+（同順位の場合は「依存チェーンが短い」「作成が古い」順で選択）
+
+開始手順（半自動）
+- 候補の抽出例（CLI）
+  - `gh issue list --label "type/task" --label mvp --state open --search "status:open" --limit 100` で一覧取得
+  - Milestoneで絞り込み: `--milestone "M1: MVP基盤構築（Sprint 1–2）"`
+  - 未アサイン: `--assignee none`
+  - 依存の判定は本文の「Depends on」を参照し、未完了が含まれるものは除外
+- 着手の宣言
+  - Issue に自分を assign し、必要なら `status/in-progress` を付与（Project の Status が In Progress に自動同期）
+  - ブランチを `feat/issue-<番号>-<短い説明>` で作成し push（自動でドラフトPRが作成され、PR本文に `Refs #<番号>` が入る）
+
+変更/追加が発生した場合の運用
+- 計画外の作業は PR の「計画外作業」に追記し、同時に元 Issue へも反映（説明追記/チェックリスト更新/必要ならサブIssue作成）
+- 別問題と判断されるものは新規 Issue を作成し、相互にリンク（`Depends on`/`Related:`）
+
+Mermaid（フロー図）
+```mermaid
+flowchart TD
+  A[開始: 次のタスクを探す] --> B{ProjectのStatusがTodo?}
+  B -- いいえ --> Z1[対象外: 後回し] --> A
+  B -- はい --> C{Milestoneは現在対象?}
+  C -- いいえ --> Z2[対象外: 次のMilestone] --> A
+  C -- はい --> D{labelにmvpあり?}
+  D -- はい --> E
+  D -- いいえ --> E
+  E{priorityは?} -->|P1| F1
+  E -->|P2| F2
+  E -->|P3| F3
+  F1 & F2 & F3 --> G{Depends onが全て完了?}
+  G -- いいえ --> Z3[ブロック: 依存を先に着手/確認] --> A
+  G -- はい --> H{未アサイン or 自分?}
+  H -- いいえ --> Z4[割当調整 or 他の候補] --> A
+  H -- はい --> I[Issueにassign/ラベル付与]
+  I --> J[ブランチ作成+push]
+  J --> K[ドラフトPR自動作成 / Refs #<番号>]
+  K --> L[実装/テスト]
+  L --> M{計画外作業あり?}
+  M -- はい --> N[PRとIssueに反映 / 必要ならサブIssue作成]
+  M -- いいえ --> O
+  N --> O[PRをOpenにしてレビュー]
+  O --> P[マージ/クローズ]
+  P --> Q[ProjectのStatus=Doneに自動同期]
+```
+
+チェックリスト（開始前/開始時）
+- [ ] Project で `Status=Todo`、対象 Milestone、`mvp`、`priority` を確認
+- [ ] Issue本文の「Depends on」が全て Done/Closed を確認（未完了なら着手しない）
+- [ ] 自分に assign、必要なら `status/in-progress` を付与
+- [ ] ブランチ作成→push（ドラフトPR自動作成）
+- [ ] PR本文の「タスク網羅性」「計画外作業」欄を更新
+
 ## 8. CI/CD の基本方針（GitHub Actions 想定）
 - PR: `lint` → `typecheck` → `unit` → `integration`（必要時）→ `build`
 - main/develop: 上記に加え `docker build`、プレビュー/ステージングへの自動デプロイ
