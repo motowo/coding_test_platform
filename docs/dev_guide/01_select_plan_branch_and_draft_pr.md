@@ -28,13 +28,13 @@
   ```bash
   # Method 1: Project一覧からTodoタスクを確認
   gh project item-list 2 --owner motowo --format json | \
-    jq -r '.items[] | select(.fieldValues[]?.name == "Todo") | "#\(.content.number)\t\(.content.title)"' 2>/dev/null
+    jq -r '.items[] | select(.status == "Todo") | "#\(.content.number)\t\(.content.title)"'
   
-  # Method 2: フォールバック - 未assignで開発可能なタスク
-  gh issue list --state open --no-assignee --label "mvp" --limit 10
+  # Method 2: 特定Issueの詳細確認（例: Issue #7 = T-003）
+  gh issue view 7 --json body,title,assignees,state,labels
   
-  # Method 3: 特定Issueの詳細確認（例: Issue #6 = T-002）
-  gh issue view 6 --json body,title,assignees,state,labels
+  # Method 3: フォールバック - 未assignで開発可能なタスク（Project利用不可時のみ）
+  gh issue list --state open --assignee "" --label "mvp" --limit 10
   ```
 - Project ビューで `Status=Todo` を抽出し、優先度/Milestone/label:mvp を考慮して対象を選ぶ
 - Issue 本文の `Depends on:` と Issueリンク（is blocked by）を確認
@@ -58,22 +58,43 @@
 - 命名規約: `feat/issue-<番号>-<短い説明>`、修正は `fix/…`、ドキュメントは `docs/…`
 - 例: `feat/issue-27-problems-schema`
 
-6) ドラフトPR作成
-- 初回 push で自動作成（ワークフロー有効時）／なければ手動で Draft を作成
+6) 初回コミットとブランチ push
+- **空のPR作成問題対応**: `git push` 時に "No commits between main and feature-branch" エラーを回避するため、初回コミット用の `.gitkeep` ファイルを作成
+  ```bash
+  # 対象ディレクトリに .gitkeep ファイル作成（例: api ディレクトリの場合）
+  touch api/.gitkeep
+  
+  # または echo を使用
+  echo "" > api/.gitkeep
+  
+  # ステージング・コミット・プッシュ
+  git add .
+  git commit -m "feat: 初期コミット - T-XXX 開発開始"
+  git push -u origin feat/issue-X-description
+  ```
+
+7) ドラフトPR作成
+- GitHub で Draft PR を作成（初回 push 後に可能になる）
 - PR本文に「開発計画（必須）」を記載（PRテンプレの該当セクション）
 - PR本文へ `Refs #<issue-number>` を含める
+- プルリクエスト作成コマンド例:
+  ```bash
+  gh pr create --draft --title "feat: T-XXX タスク名" --body "開発計画:\n- 実装内容\n\nRefs #XXX"
+  ```
 
 ## チェックリスト
 - [ ] 対象Issueは Project で `Status=Todo`
 - [ ] `Depends on` の依存先はすべて Closed/Merged（不明なし）
 - [ ] Issue に assign 済み、Project を `In Progress` に更新
 - [ ] ブランチ作成（命名規約準拠）
+- [ ] 初回コミット用 `.gitkeep` ファイル作成・コミット・プッシュ
 - [ ] ドラフトPR作成、PR本文へ「開発計画（必須）」と `Refs #<番号>` を記載
 
 ## よくある落とし穴
 - 依存未解決のまま開始 → `blocked` により着手不可の状態が続く
 - 計画未整備で実装開始 → 範囲逸脱やレビュー遅延につながる
 - ブランチ命名/PRテンプレ不統一 → CIやオートメーションのトリガが揃わない
+- **初回コミットなしでのPR作成** → "No commits between main and feature-branch" エラーが発生し、PR作成不可
 
 ## 関連リンク
 - 開発者ガイド: 5.0 開発フロー、7.1 Issue開始、7.2 PRドラフト、7.3.1 Depends on 記法（`docs/04_developer_guide.md`）
