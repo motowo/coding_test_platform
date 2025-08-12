@@ -36,7 +36,7 @@
 - test:e2e（Playwright、主要フロー）
 - ラベル/変更差分で制御（docs-only 変更時はスキップ可）
 - 再試行: 1 回まで許可（flaky に対するバッファ）
- - MCP 連携は将来の任意機能。未設定でも自律実行し、Artifacts にスクショ/動画/トレースを保存
+ - 開発環境では MCP（Playwright MCP 等）を任意で利用可能だが、CI/公開環境では使用しない前提。未設定でも自律実行し、Artifacts にスクショ/動画/トレースを保存
 
 6) セキュリティ/品質補助（任意 → 将来必須）
 - dep-audit（依存脆弱性チェック）
@@ -81,6 +81,14 @@ GitHub の Settings → Branches → Branch protection rules で上記を Requir
   - `markdown` は docs 変更時のみ、その他は docs-only でない場合に実行
   - `integration-api` はフォーク PR では不実行、`e2e` は `run-e2e` ラベルが付与されたときのみ実行
   - 期待スクリプト名の詳細は `docs/package_scripts_guide.md` を参照
+
+関連ワークフロー（Issues ラベリング）
+- `.github/workflows/issues-blocked-label.yml`（追加予定）
+  - 目的: 依存未完のIssueへ `blocked` を自動付与/解除
+  - トリガー: `issues`（opened/edited/closed/reopened/linked/unlinked）, `issue_comment`（補助）, `pull_request`（closed: merged判定）, `workflow_dispatch`
+  - 依存記法: 本文の `Depends on: #…` と Issueリンク（`is blocked by`）を依存として解釈
+  - 権限: `permissions: issues: write`（最小権限）
+  - 仕様の詳細と受入基準: `docs/09_issue_automation.md`
 
 ## 5. 実行環境・キャッシュ・アーティファクト
 - ランナー: ubuntu-latest（Node.js 20）

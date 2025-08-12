@@ -1,0 +1,233 @@
+name: "Issues: Auto manage 'blocked' by dependencies"
+
+on:
+  issues:
+    types: [opened, edited, reopened, closed]
+  issue_comment:
+    types: [created, edited]
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Evaluate this issue number"
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+concurrency:
+  group: issues-blocked-${{ github.event_name }}-${{ github.event.issue.number || github.event.inputs.issue_number || 'manual' }}
+  cancel-in-progress: false
+
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Skip if PR comment (issue_comment on PR)
+        if: ${{ github.event_name == 'issue_comment' && github.event.issue.pull_request }}
+        run: echo "Skip PR comments"
+
+      - name: Evaluate and update 'blocked' label
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const core = require('@actions/core');
+            const ctx = context;
+
+            const OWNER = ctx.repo.owner;
+            const REPO = ctx.repo.repo;
+
+            function parseDependsOn(body, owner, repo) {
+              const result = new Map();
+              if (!body) return [];
+              const regex = /^\s*depends\s*on\s*:\s*(.+)$/gim;
+              let match;
+              while ((match = regex.exec(body)) !== null) {
+                const list = match[1]
+                  .split(',')
+                  .map(s => s.trim())
+                  .filter(Boolean);
+                for (const token of list) {
+                  let m;
+                  if ((m = token.match(/^#(\d+)$/))) {
+                    const key = `${owner}/${repo}#${m[1]}`;
+                    result.set(key, { owner, repo, number: Number(m[1]) });
+                  } else if ((m = token.match(/^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)#(\d+)$/))) {
+                    const o = m[1];
+                    const r = m[2];
+                    const n = Number(m[3]);
+                    const key = `${o}/${r}#${n}`;
+                    result.set(key, { owner: o, repo: r, number: n });
+                  }
+                }
+              }
+              return Array.from(result.values());
+            }
+
+            async function ensureBlockedLabel(owner, repo) {
+              const name = 'blocked';
+              try {
+                await github.rest.issues.getLabel({ owner, repo, name });
+              } catch (e) {
+                if (e.status === 404) {
+                  await github.rest.issues.createLabel({
+                    owner, repo,
+                    name,
+                    color: 'd73a4a',
+                    description: 'This issue is blocked by unresolved dependencies.'
+                  });
+                } else {
+                  throw e;
+                }
+              }
+            }
+
+            async function getIssueOrNull(owner, repo, number) {
+              try {
+                const { data } = await github.rest.issues.get({ owner, repo, issue_number: number });
+                return data;
+              } catch (e) {
+                if (e.status === 404 || e.status === 410 || e.status === 403) {
+                  return null; // unknown or inaccessible
+                }
+                throw e;
+              }
+            }
+
+            async function addLabel(owner, repo, issue_number, name) {
+              await github.rest.issues.addLabels({ owner, repo, issue_number, labels: [name] });
+            }
+
+            async function removeLabelIfExists(owner, repo, issue_number, name) {
+              try {
+                await github.rest.issues.removeLabel({ owner, repo, issue_number, name });
+              } catch (e) {
+                if (e.status !== 404) throw e; // ignore if not present
+              }
+            }
+
+            async function evaluateOne(owner, repo, number) {
+              const issue = await getIssueOrNull(owner, repo, number);
+              if (!issue) {
+                core.info(`Issue ${owner}/${repo}#${number} not accessible; skip.`);
+                return;
+              }
+
+              const depends = parseDependsOn(issue.body || '', owner, repo);
+
+              // Best-effort: try to augment with linked issues (is blocked by)
+              // If the Timeline API is unavailable, silently continue with body-based depends only.
+              try {
+                const timeline = await github.request('GET /repos/{owner}/{repo}/issues/{issue_number}/timeline', {
+                  owner, repo, issue_number: number, per_page: 100,
+                  headers: { accept: 'application/vnd.github.mockingbird-preview+json' }
+                });
+                for (const ev of timeline.data || []) {
+                  // Heuristic: treat 'connected' events where subject is an issue and the relationship is negative for this issue
+                  // Fallback: also consider cross-referenced from another issue marking this one as blocked.
+                  if (ev.event === 'connected' && ev.subject && ev.subject.type === 'issue' && ev.subject.url) {
+                    const m = ev.subject.url.match(/repos\/([^/]+)\/([^/]+)\/issues\/(\d+)/);
+                    if (m) {
+                      const o = m[1], r = m[2], n = Number(m[3]);
+                      const key = `${o}/${r}#${n}`;
+                      // Only add if not already present
+                      if (!depends.find(d => `${d.owner}/${d.repo}#${d.number}` === key)) {
+                        depends.push({ owner: o, repo: r, number: n });
+                      }
+                    }
+                  } else if (ev.event === 'cross-referenced' && ev.source && ev.source.issue && ev.source.issue.number) {
+                    const src = ev.source.issue;
+                    const o = src.repository?.owner?.login || owner;
+                    const r = src.repository?.name || repo;
+                    const n = Number(src.number);
+                    const key = `${o}/${r}#${n}`;
+                    if (!depends.find(d => `${d.owner}/${d.repo}#${d.number}` === key)) {
+                      depends.push({ owner: o, repo: r, number: n });
+                    }
+                  }
+                }
+              } catch (e) {
+                core.info(`Timeline API not available or failed: ${e.status || ''}`);
+              }
+
+              let hasUnknown = false;
+              let hasOpen = false;
+
+              for (const d of depends) {
+                const di = await getIssueOrNull(d.owner, d.repo, d.number);
+                if (!di) {
+                  hasUnknown = true; // 保守的: 不明はblocked維持
+                  continue;
+                }
+                if (di.state === 'open') {
+                  hasOpen = true;
+                }
+              }
+
+              const shouldBlocked = hasOpen || hasUnknown;
+
+              await ensureBlockedLabel(owner, repo);
+
+              // Determine current presence of label
+              const currentLabels = (issue.labels || []).map(l => (typeof l === 'string' ? l : l.name));
+              const hasBlocked = currentLabels.includes('blocked');
+
+              if (shouldBlocked && !hasBlocked) {
+                await addLabel(owner, repo, number, 'blocked');
+                core.info(`Added 'blocked' to ${owner}/${repo}#${number}`);
+              } else if (!shouldBlocked && hasBlocked) {
+                await removeLabelIfExists(owner, repo, number, 'blocked');
+                core.info(`Removed 'blocked' from ${owner}/${repo}#${number}`);
+              } else {
+                core.info(`No change for ${owner}/${repo}#${number} (shouldBlocked=${shouldBlocked}, hasBlocked=${hasBlocked})`);
+              }
+            }
+
+            async function findAndEvaluateDependents(owner, repo, changedNumber) {
+              // 同一リポ内で本文に明示された依存のみを検索
+              const q = `repo:${owner}/${repo} is:issue state:open in:body "Depends on: #${changedNumber}"`;
+              try {
+                const { data } = await github.rest.search.issuesAndPullRequests({ q, per_page: 50 });
+                for (const item of data.items || []) {
+                  if (item.pull_request) continue; // ignore PRs
+                  await evaluateOne(owner, repo, item.number);
+                }
+              } catch (e) {
+                core.info(`Search dependents failed: ${e.status || ''}`);
+              }
+            }
+
+            // Entry point
+            const event = ctx.eventName;
+            const action = ctx.payload.action;
+
+            let targetOwner = OWNER;
+            let targetRepo = REPO;
+            let targetNumber = null;
+
+            if (event === 'workflow_dispatch') {
+              const inputNum = (ctx.payload.inputs && ctx.payload.inputs.issue_number) || '';
+              if (!inputNum) {
+                core.setFailed('workflow_dispatch requires issue_number input.');
+                return;
+              }
+              targetNumber = Number(inputNum);
+            } else if (event === 'issues') {
+              targetNumber = ctx.payload.issue.number;
+            } else if (event === 'issue_comment') {
+              // Already skipped PR comments above
+              targetNumber = ctx.payload.issue.number;
+            } else {
+              core.setFailed(`Unsupported event: ${event}`);
+              return;
+            }
+
+            await evaluateOne(targetOwner, targetRepo, targetNumber);
+
+            // When an issue is closed or reopened, also update dependents in same repo
+            if (event === 'issues' && (action === 'closed' || action === 'reopened')) {
+              await findAndEvaluateDependents(targetOwner, targetRepo, targetNumber);
+            }
+

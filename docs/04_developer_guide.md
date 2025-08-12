@@ -17,7 +17,7 @@
   - Docker Compose（v2 同等）
 - 推奨ツール
   - direnv（.env の安全な読み込み）
-  - kubectl（将来の k8s 検証用）、make
+  - make（補助スクリプト用）
 
 ## 2. リポジトリ取得とブランチ戦略
 - 取得: `git clone` 後に origin を確認
@@ -39,17 +39,19 @@
   - 共有が必要な既定値は `.env.example` を用意（別途コードリポジトリ側）。
 
 ## 4. ローカル開発手順（概念）
-- 依存起動（docker compose 例）
-  - `postgres`: 5432、`redis`: 6379、永続ボリューム使用
+- 依存起動（Docker Compose）
+  - サービス: `postgres`（5432）, `redis`（6379）をボリューム永続化で起動
+  - 任意: `scoring-service`（採点要求のオーケストレーション）
 - アプリ起動（想定）
   - Web(Next.js): `pnpm dev`（http://localhost:3000）
   - API(Fastify): `pnpm dev`（http://localhost:4000）
-  - 採点ワーカー: Docker 実行（ジョブRunner）
+  - 採点ランナー: 採点時にホストDocker上で一時コンテナを起動（API/Scoring Service から呼び出し）
 - 初期化
   - DB マイグレーション: `pnpm db:migrate`（ツール選定に追従）
   - 初期データ投入: `pnpm db:seed`（必要時）
 - ポイント
   - CORS/プロキシ設定は Next.js 側で `/api` プロキシ、または `.env` で API ベースURLを指定。
+  - Docker ソケットの権限/分離（採点用一時コンテナ）に留意（ローカルは開発用、公開環境では厳格化）。
 
 ## 5. テスト方針と実行
 - テストの階層
@@ -137,7 +139,19 @@
 - `ProjectV2: Sync status with issues`: Issueイベント（open/assign/label/close）に応じて Project の Status を更新
 - `PR: Auto create draft from branch`: ブランチPush時に、分岐規則に合致すればドラフトPRを自動作成し、関連Issueを In Progress に設定
 - PRテンプレート: `.github/pull_request_template.md`（関連Issue、タスク網羅性、計画外作業の明記を必須）
- - `Issues: Auto manage 'blocked' label by dependencies`: Issue本文の「Depends on: #…」に基づき、依存が未完のタスクへ `blocked` ラベルを自動付与/解除
+- `Issues: Auto manage 'blocked' label by dependencies`: Issue本文の「Depends on: #…」や Issueリンクに基づき、依存が未完のタスクへ `blocked` ラベルを自動付与/解除（詳細: `docs/09_issue_automation.md`）
+
+#### 7.3.1 依存関係（Depends on）記法と運用ルール
+- 正準記法（本文）
+  - 行頭に `Depends on:` を置き、Issue参照をカンマ区切りで列挙
+  - 例: `Depends on: #12, #34, org/repo#56`
+- 代替（UIリンク）: GitHub の Issueリンクで `is blocked by` を設定（本文未記載でも可）
+- 付与/解除の基本
+  - 依存先に Open が1つでもあれば `blocked` 付与
+  - すべて Closed/Merged なら `blocked` 解除
+- 権限/クロスレポ
+  - 権限不足の参照は「不明」として扱い、`blocked` を保守的に維持。
+  - 詳細仕様・受入基準は `docs/09_issue_automation.md` を参照。
 
 運用ヒント
 - Projectのビューは「Group by: Milestone」「Filter: label:mvp or Milestone=M1/M2」「Sort by: priority/P*」を推奨
@@ -271,14 +285,25 @@ flowchart TD
 - Playwright が失敗
   - ヘッドレス/有頭モードの切替、タイムアウト延長、`--debug` で再実行
 
-## 13. 付録：ローカル構成（参考）
-- サービス
+## 13. 付録：ローカル/Compose 構成（参考）
+- サービス（Compose ネットワーク）
   - web: Next.js（3000）
   - api: Fastify（4000）
   - db: PostgreSQL（5432）
   - cache: Redis（6379）
-  - scoring: Docker 実行（ジョブ）
+  - scoring-service: 採点一時コンテナの起動/監視（APIから呼ばれる）
+- 採点用一時コンテナ
+  - 言語ランタイム別イメージを用意し、提出ごとに起動→結果収集→削除
+  - ローカルはDockerソケットを使用。公開環境ではソケット露出を避け、ブリッジサービスや隔離ノード等で厳格化
 - ポート競合時は `docker ps` / `lsof -i` で解消
+
+## 14. 開発向け MCP 環境（ローカル限定）
+- 目的: Claude Code を主とする開発時に MCP サーバ（Playwright, Serena）を併用し、E2E結果・知識ベース連携等を高効率化
+- 範囲: 開発環境のみ。本番/公開環境では使用しない
+- 構成例:
+  - Playwright MCP: E2E 成果物の収集・参照を補助（Reporter連携等）
+  - Serena MCP: ドキュメント/ナレッジ連携や作業補助
+- 設定: MCP の具体設定は Claude Code 側で実施。本リポジトリではエンドポイント/トグル等の環境変数のみ参照（例: `MCP_PLAYWRIGHT_ENDPOINT`, `MCP_SERENA_ENDPOINT`, `E2E_USE_MCP`）
 
 ---
 本マニュアルは docs/ 配下の設計・タスクに追従して随時更新します。整合性に差分が生じた場合は、当該PRで併せて更新してください。

@@ -45,7 +45,9 @@
     ├── 05_testing_strategy.md       # テスト戦略
     ├── 06_pr_auto_checks.md         # PR 自動チェック
     ├── 07_package_scripts_guide.md  # スクリプト定義ガイド
-    └── 08_frontend_style_guide.md   # フロントエンド スタイルガイド
+    ├── 08_frontend_style_guide.md   # フロントエンド スタイルガイド
+    ├── 09_issue_automation.md       # Issue依存に基づくblocked自動付与/解除
+    └── 10_dev_mcp.md                # 開発向け MCP 環境ガイド（ローカル限定）
 ```
 
 ## ドキュメントの編集フロー（推奨）
