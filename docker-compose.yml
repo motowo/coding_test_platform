@@ -1,0 +1,128 @@
+
+services:
+  # Database
+  skillgaug-db:
+    image: postgres:16-alpine
+    container_name: skillgaug-db-1
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-skillgaug}
+      POSTGRES_USER: ${POSTGRES_USER:-skillgaug}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-skillgaug_dev}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - skillgaug
+
+  # Redis Cache
+  skillgaug-redis:
+    image: redis:7-alpine
+    container_name: skillgaug-redis-1
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD:-skillgaug_redis}
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - skillgaug
+
+  # API Server (Fastify)
+  skillgaug-api:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: skillgaug-api-1
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 4000
+      DATABASE_URL: postgresql://${POSTGRES_USER:-skillgaug}:${POSTGRES_PASSWORD:-skillgaug_dev}@skillgaug-db:5432/${POSTGRES_DB:-skillgaug}
+      REDIS_URL: redis://:${REDIS_PASSWORD:-skillgaug_redis}@skillgaug-redis:6379
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-this-in-production}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./api:/app
+      - api_node_modules:/app/node_modules
+    depends_on:
+      - skillgaug-db
+      - skillgaug-redis
+    networks:
+      - skillgaug
+
+  # Web Frontend (Next.js)
+  skillgaug-web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: skillgaug-web-1
+    restart: unless-stopped
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-http://localhost:4000}
+      NEXTAUTH_SECRET: ${NEXTAUTH_SECRET:-your-super-secret-nextauth-key-change-this}
+      NEXTAUTH_URL: ${NEXTAUTH_URL:-http://localhost:3000}
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./web:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      - skillgaug-api
+    networks:
+      - skillgaug
+
+  # MCP - Serena (Development only)
+  skillgaug-serena-mcp:
+    image: serena:latest
+    container_name: skillgaug-serena-mcp-1
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+    volumes:
+      - ./:/workspaces/projects/coding_test_platform:ro
+    networks:
+      - skillgaug
+    profiles:
+      - development
+      - mcp
+
+  # MCP - Playwright (Development only)
+  skillgaug-playwright-mcp:
+    build:
+      context: ./tests/playwright-mcp
+      dockerfile: Dockerfile
+    container_name: skillgaug-playwright-mcp-1
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+    volumes:
+      - ./tests:/workspace/tests
+      - playwright_browsers:/ms-playwright
+    networks:
+      - skillgaug
+    profiles:
+      - development
+      - mcp
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  api_node_modules:
+    driver: local
+  web_node_modules:
+    driver: local
+  playwright_browsers:
+    driver: local
+
+networks:
+  skillgaug:
+    driver: bridge

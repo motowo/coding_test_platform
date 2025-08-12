@@ -1,0 +1,33 @@
+{
+  "mcpServers": {
+    "serena": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i",
+        "skillgaug-serena-mcp-1",
+        "serena",
+        "start-mcp-server",
+        "--project",
+        "/workspaces/projects/coding_test_platform"
+      ],
+      "env": {}
+    },
+    "playwright": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "exec",
+        "-i", 
+        "skillgaug-playwright-mcp-1",
+        "node",
+        "/workspace/tests/mcp-playwright-server.js"
+      ],
+      "env": {
+        "NODE_ENV": "development",
+        "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright"
+      }
+    }
+  }
+}

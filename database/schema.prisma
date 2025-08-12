@@ -1,0 +1,235 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =================================================================
+// User Management
+// =================================================================
+
+model User {
+  id           Int      @id @default(autoincrement())
+  name         String   @db.VarChar(255)
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         UserRole
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  createdProblems      Problem[]            @relation("ProblemAuthor")
+  createdAssessments   Assessment[]         @relation("AssessmentCreator")
+  candidateAssessments CandidateAssessment[]
+
+  @@map("users")
+}
+
+enum UserRole {
+  CANDIDATE
+  RECRUITER
+  CREATOR
+  ADMIN
+}
+
+// =================================================================
+// Problem Management
+// =================================================================
+
+model Problem {
+  id                   Int        @id @default(autoincrement())
+  title                String     @db.VarChar(255)
+  description          String     @db.Text
+  difficulty           Difficulty
+  category             String?    @db.VarChar(100)
+  estimatedTimeMinutes Int?       @map("estimated_time_minutes")
+  authorId             Int        @map("author_id")
+  createdAt            DateTime   @default(now()) @map("created_at")
+  updatedAt            DateTime   @updatedAt @map("updated_at")
+
+  // Relations
+  author             User                  @relation("ProblemAuthor", fields: [authorId], references: [id])
+  testCases          TestCase[]
+  assessmentProblems AssessmentProblem[]
+  submissions        Submission[]
+  skillNodes         ProblemSkillNode[]
+
+  @@map("problems")
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+model TestCase {
+  id             Int     @id @default(autoincrement())
+  problemId      Int     @map("problem_id")
+  name           String? @db.VarChar(255)
+  input          String? @db.Text
+  expectedOutput String? @map("expected_output") @db.Text
+  isHidden       Boolean @default(false) @map("is_hidden")
+  weight         Float   @default(1.0)
+
+  // Relations
+  problem Problem @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@map("test_cases")
+}
+
+// =================================================================
+// Programming Languages
+// =================================================================
+
+model Language {
+  id          Int    @id @default(autoincrement())
+  name        String @db.VarChar(100)
+  version     String @db.VarChar(50)
+  dockerImage String @map("docker_image") @db.VarChar(255)
+
+  // Relations
+  submissions Submission[]
+
+  @@unique([name, version])
+  @@map("languages")
+}
+
+// =================================================================
+// Assessment Management
+// =================================================================
+
+model Assessment {
+  id                   Int      @id @default(autoincrement())
+  title                String   @db.VarChar(255)
+  description          String?  @db.Text
+  timeLimitMinutes     Int?     @map("time_limit_minutes")
+  preAssessmentGuide   String?  @map("pre_assessment_guide") @db.Text
+  postAssessmentGuide  String?  @map("post_assessment_guide") @db.Text
+  createdBy            Int      @map("created_by")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // Relations
+  creator              User                  @relation("AssessmentCreator", fields: [createdBy], references: [id])
+  assessmentProblems   AssessmentProblem[]
+  candidateAssessments CandidateAssessment[]
+
+  @@map("assessments")
+}
+
+model AssessmentProblem {
+  assessmentId Int @map("assessment_id")
+  problemId    Int @map("problem_id")
+  order        Int
+
+  // Relations
+  assessment Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  problem    Problem    @relation(fields: [problemId], references: [id], onDelete: Cascade)
+
+  @@id([assessmentId, problemId])
+  @@map("assessment_problems")
+}
+
+// =================================================================
+// Candidate Assessment & Submissions
+// =================================================================
+
+model CandidateAssessment {
+  id           Int                       @id @default(autoincrement())
+  assessmentId Int                       @map("assessment_id")
+  candidateId  Int                       @map("candidate_id")
+  status       CandidateAssessmentStatus
+  dueDate      DateTime?                 @map("due_date")
+  completedAt  DateTime?                 @map("completed_at")
+  overallScore Float?                    @map("overall_score")
+
+  // Relations
+  assessment  Assessment   @relation(fields: [assessmentId], references: [id])
+  candidate   User         @relation(fields: [candidateId], references: [id])
+  submissions Submission[]
+
+  @@unique([assessmentId, candidateId])
+  @@map("candidate_assessments")
+}
+
+enum CandidateAssessmentStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  EXPIRED
+}
+
+model Submission {
+  id                    Int              @id @default(autoincrement())
+  candidateAssessmentId Int              @map("candidate_assessment_id")
+  problemId             Int              @map("problem_id")
+  languageId            Int              @map("language_id")
+  code                  String           @db.Text
+  status                SubmissionStatus
+  score                 Float?
+  submittedAt           DateTime         @default(now()) @map("submitted_at")
+
+  // Relations
+  candidateAssessment CandidateAssessment @relation(fields: [candidateAssessmentId], references: [id])
+  problem             Problem             @relation(fields: [problemId], references: [id])
+  language            Language            @relation(fields: [languageId], references: [id])
+
+  @@map("submissions")
+}
+
+enum SubmissionStatus {
+  PENDING
+  SCORING
+  SUCCESS
+  FAILURE
+}
+
+// =================================================================
+// Skill Map System (Future Enhancement)
+// =================================================================
+
+model SkillMap {
+  id          Int    @id @default(autoincrement())
+  name        String @db.VarChar(255)
+  description String? @db.Text
+
+  // Relations
+  skillNodes SkillNode[]
+
+  @@map("skill_maps")
+}
+
+model SkillNode {
+  id           Int     @id @default(autoincrement())
+  skillMapId   Int     @map("skill_map_id")
+  name         String  @db.VarChar(255)
+  description  String? @db.Text
+  parentNodeId Int?    @map("parent_node_id")
+
+  // Relations
+  skillMap     SkillMap           @relation(fields: [skillMapId], references: [id])
+  parentNode   SkillNode?         @relation("SkillNodeHierarchy", fields: [parentNodeId], references: [id])
+  childNodes   SkillNode[]        @relation("SkillNodeHierarchy")
+  problems     ProblemSkillNode[]
+
+  @@map("skill_nodes")
+}
+
+model ProblemSkillNode {
+  problemId   Int @map("problem_id")
+  skillNodeId Int @map("skill_node_id")
+
+  // Relations
+  problem   Problem   @relation(fields: [problemId], references: [id], onDelete: Cascade)
+  skillNode SkillNode @relation(fields: [skillNodeId], references: [id], onDelete: Cascade)
+
+  @@id([problemId, skillNodeId])
+  @@map("problem_skill_nodes")
+}
