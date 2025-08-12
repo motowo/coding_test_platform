@@ -1,75 +1,293 @@
-# SkillGaug ドキュメント（システム名）
+# SkillGaug - コーディング評価プラットフォーム
 
-本リポジトリは、SkillGaug（オンラインのコーディングテスト/スキル評価プラットフォーム）の要件定義・設計・タスクを管理するドキュメントです。開発前段の合意形成と一貫した更新を目的に、すべて Markdown で管理します。
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=flat&logo=docker&logoColor=white)](https://www.docker.com/)
+[![TypeScript](https://img.shields.io/badge/typescript-%23007ACC.svg?style=flat&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-black?style=flat&logo=next.js&logoColor=white)](https://nextjs.org/)
+[![Fastify](https://img.shields.io/badge/fastify-%23000000.svg?style=flat&logo=fastify&logoColor=white)](https://www.fastify.io/)
 
-## 目的とスコープ（要約）
-- 目的: 採用や育成の文脈で、受験者のコーディングスキルを公正かつ再現性高く評価する。
-- MVP: 単一問題の作成/編集、受験、実行/提出、採点、結果閲覧、およびユーザー認証を含む最小機能。
-- 非機能（抜粋）: 実行/採点の応答時間、サンドボックス実行、基礎的な信頼性・可用性。
+技術採用とスキル評価のための現代的なコーディング評価プラットフォーム。Next.js、Fastify、PostgreSQL、Dockerで構築。
 
-詳細は下記ドキュメントを参照してください。
+## 🚀 クイックスタート
 
-## ドキュメント
-- 要件定義書: `docs/01_requirements.md`
-  - ペルソナ、機能一覧（MVP明示）、非機能要件、ワークフロー
-  - 例: 問題作成/編集、単一問題の受験・提出・採点、結果閲覧
-- 技術設計書: `docs/02_design.md`
-  - 全体アーキテクチャ、技術スタック、データモデル、API、画面定義、セキュリティ/性能設計、UIデザインシステム（トークン）
-- 開発タスク: `docs/03_tasks.md`
-  - エピック/ユーザーストーリー、優先度、受入基準（DoD）、見積り、リスク/ブロッカー
-- 開発者マニュアル: `docs/04_developer_guide.md`
-  - ローカル実行、テスト、レビュー、CI/CD、リリース手順、TDD指針
-- テスト戦略: `docs/05_testing_strategy.md`
-  - ツール選定（Vitest/MSW/Testcontainers/Playwright）、TDD、E2E、安定性方針
-- PR 自動チェック: `docs/06_pr_auto_checks.md`
-  - 必須チェック、条件付きチェック、ブランチ保護/ラベル運用
-- スクリプト定義ガイド: `docs/07_package_scripts_guide.md`
-  - 単一/モノレポ構成の `package.json` スクリプト例（CIジョブと対応）
-- 付録: フロントエンド スタイルガイド `docs/08_frontend_style_guide.md`
+### 前提条件
 
-あわせて、ドキュメント運用ルールは以下を参照してください。
-- エージェント作業ガイドライン: `AGENTS.md`
-- ドキュメント作成ポリシー（原則）: `GEMINI.md`
+- **Docker** と **Docker Compose** がインストール済み
+- **Node.js 20+** （ローカル開発用）
+- **Git** バージョン管理用
 
-## リポジトリ構成
-```
-.
-├── AGENTS.md                        # エージェント向けガイドライン
-├── GEMINI.md                        # ドキュメント作成ポリシーの原則
-├── README.md                        # 本ファイル（概要/ナビゲーション）
-└── docs/
-    ├── 01_requirements.md           # 要件定義書（最初に読む）
-    ├── 02_design.md                 # 技術設計書
-    ├── 03_tasks.md                  # 開発タスク
-    ├── 04_developer_guide.md        # 開発者マニュアル
-    ├── 05_testing_strategy.md       # テスト戦略
-    ├── 06_pr_auto_checks.md         # PR 自動チェック
-    ├── 07_package_scripts_guide.md  # スクリプト定義ガイド
-    ├── 08_frontend_style_guide.md   # フロントエンド スタイルガイド
-    ├── 09_issue_automation.md       # Issue依存に基づくblocked自動付与/解除
-    └── 10_dev_mcp.md                # 開発向け MCP 環境ガイド（ローカル限定）
+### 1. クローンとセットアップ
+
+```bash
+# リポジトリをクローン
+git clone <repository-url>
+cd coding_test_platform
+
+# 自動セットアップ実行
+./scripts/setup.sh
 ```
 
-## ドキュメントの編集フロー（推奨）
-1) 指示・前提の確認（不明点は質問）
-2) MVP/スコープの明記（仮は明示）
-3) `docs/01_requirements.md` 更新
-4) `docs/02_design.md` 更新（要件と整合）
-5) `docs/03_tasks.md` 更新（優先度・受入基準を明確化）
-6) 3文書の相互整合チェック（API/データ/画面/優先度）
+セットアップスクリプトは以下を実行します：
+- `.env.example` から `.env.local` を作成
+- Docker イメージのプルとビルド
+- データベースと Redis の起動
+- マイグレーション実行とシードデータ投入
+- 全サービスの起動
 
-運用ルール（抜粋）:
-- すべて Markdown。省略記法は使わず、常にファイル全体を完全出力。
-- 要件・設計・タスク間の用語/仕様/優先度の一貫性を維持。
-- 仕様変更時は関連する全ファイルを同時に更新することを推奨。
+### 2. アプリケーションへのアクセス
 
-## 迅速な参照
-- プロダクトの背景/目的/MVP: `docs/01_requirements.md`
-- API/データモデル/画面: `docs/02_design.md`
-- 実装・検証に落とし込む手順: `docs/03_tasks.md`
-- デザインシステム/トークン: `docs/02_design.md` 内「UIデザインシステム（トークン）」
-- フロントエンド スタイルガイド（Next.js/Tailwind/cva）: `docs/08_frontend_style_guide.md`
-- 開発フロー/レビュー/テスト: `docs/04_developer_guide.md`
-- PR 自動チェック運用: `docs/06_pr_auto_checks.md`
+- **🌐 Web アプリケーション**: http://localhost:3000
+- **🔧 API サーバー**: http://localhost:4000
+- **📚 API ドキュメント**: http://localhost:4000/documentation
 
-ご不明点や矛盾点がある場合は、`AGENTS.md` の方針に沿って合意形成のための質問を行ってください。
+### 3. デフォルトログイン認証情報
+
+| 役割 | メールアドレス | パスワード |
+|------|-------|----------|
+| **管理者** | admin@skillgaug.local | password123 |
+| **問題作成者** | creator@skillgaug.local | password123 |
+| **採用担当者** | recruiter@skillgaug.local | password123 |
+| **受験者** | john.doe@example.com | password123 |
+
+## 🛠️ 開発
+
+### 開発用コマンド
+
+```bash
+# 全サービス開始
+./scripts/dev.sh start
+
+# 全サービス停止
+./scripts/dev.sh stop
+
+# ログ表示
+./scripts/dev.sh logs
+
+# データベースリセット
+./scripts/dev.sh reset-db
+
+# テスト実行
+./scripts/dev.sh test
+
+# 利用可能な全コマンド表示
+./scripts/dev.sh help
+```
+
+### プロジェクト構成
+
+```
+skillgaug/
+├── api/                    # Fastify API サーバー
+│   ├── src/
+│   │   ├── routes/        # API ルート
+│   │   ├── middleware/    # 認証、CORS など
+│   │   ├── utils/         # データベースユーティリティ、設定
+│   │   └── index.ts       # メインサーバーファイル
+│   ├── Dockerfile
+│   └── package.json
+├── web/                   # Next.js Web アプリケーション
+│   ├── src/
+│   │   ├── app/          # App Router ページ
+│   │   ├── components/   # React コンポーネント
+│   │   ├── lib/          # ユーティリティ
+│   │   └── styles/       # グローバルスタイル
+│   ├── Dockerfile
+│   └── package.json
+├── database/              # データベーススキーマとマイグレーション
+│   ├── schema.prisma     # Prisma スキーマ
+│   └── seeds/            # シードデータ
+├── scripts/              # 開発用スクリプト
+├── docs/                 # プロジェクトドキュメント
+└── docker-compose.yml   # Docker サービス構成
+```
+
+## 🏗️ アーキテクチャ
+
+### 技術スタック
+
+- **フロントエンド**: Next.js 14 + TypeScript + Tailwind CSS + Radix UI
+- **バックエンド**: Fastify + TypeScript + Prisma ORM
+- **データベース**: PostgreSQL + Redis
+- **コンテナ化**: Docker + Docker Compose
+- **認証**: JWT + bcrypt
+- **API ドキュメント**: OpenAPI/Swagger
+
+### サービスアーキテクチャ
+
+```mermaid
+graph TD
+    A[Web - Next.js] --> B[API - Fastify]
+    B --> C[PostgreSQL]
+    B --> D[Redis]
+    B --> E[採点サービス]
+    E --> F[Docker ランナー]
+```
+
+### 主要機能
+
+- ✅ **ユーザー管理**: 役割ベース認証（管理者、作成者、採用担当者、受験者）
+- ✅ **問題ライブラリ**: テストケース付きコーディング問題の作成・管理
+- ✅ **評価構築**: 問題ライブラリから評価を作成
+- ✅ **受験者ポータル**: 時間制限付き評価受験
+- 🚧 **コード実行**: セキュアなコンテナ化コード実行（開発中）
+- 🚧 **自動採点**: テストケース検証と採点（開発中）
+- 🚧 **結果ダッシュボード**: パフォーマンス分析とレポート（開発中）
+
+## 📊 データベーススキーマ
+
+プラットフォームは以下をサポートする包括的なデータベーススキーマを使用：
+
+- 役割ベースアクセス制御付き**ユーザー**
+- 複数テストケースと難易度レベル付き**問題**
+- カスタマイズ可能な問題セットと時間制限付き**評価**
+- 実行結果と採点付き**提出物**
+- 学習パス統合用**スキルマップ**（将来機能）
+
+完全なスキーマ定義については [`database/schema.prisma`](database/schema.prisma) を参照してください。
+
+## 🧪 テスト
+
+```bash
+# 全テスト実行
+./scripts/dev.sh test
+
+# API テストのみ実行
+./scripts/dev.sh test-api
+
+# Web テストのみ実行
+./scripts/dev.sh test-web
+
+# リンティング実行
+./scripts/dev.sh lint
+```
+
+### テストスタック
+
+- **単体テスト**: Vitest + Testing Library
+- **統合テスト**: Testcontainers
+- **E2E テスト**: Playwright
+- **API テスト**: Fastify 組み込み
+
+## 🔧 設定
+
+### 環境変数
+
+`.env.example` を `.env.local` にコピーして設定：
+
+```env
+# データベース
+DATABASE_URL=postgresql://skillgaug:password@localhost:5432/skillgaug
+REDIS_URL=redis://:password@localhost:6379
+
+# 認証
+JWT_SECRET=your-super-secret-jwt-key-change-this
+NEXTAUTH_SECRET=your-nextauth-secret
+
+# API 設定
+CORS_ORIGIN=http://localhost:3000
+
+# 機能フラグ（将来）
+FEATURE_AI_PROBLEM_GENERATION=false
+FEATURE_SKILL_MAP_INTEGRATION=false
+```
+
+### Docker 設定
+
+サービスは `docker-compose.yml` で設定：
+
+- **skillgaug-web**: Next.js フロントエンド（ポート 3000）
+- **skillgaug-api**: Fastify バックエンド（ポート 4000）
+- **skillgaug-db**: PostgreSQL データベース（ポート 5432）
+- **skillgaug-redis**: Redis キャッシュ（ポート 6379）
+- **skillgaug-*-mcp**: MCP サービス（開発のみ）
+
+## 📚 API ドキュメント
+
+サーバー稼働時、対話型 API ドキュメントが http://localhost:4000/documentation で利用可能です。
+
+### 主要エンドポイント
+
+- `POST /api/v1/auth/login` - ユーザー認証
+- `GET /api/v1/auth/me` - 現在のユーザープロファイル取得
+- `GET /api/v1/users` - ユーザー一覧（管理者/採用担当者のみ）
+- `GET /api/v1/languages` - サポートプログラミング言語取得
+- `GET /api/v1/problems` - コーディング問題一覧（近日公開）
+- `POST /api/v1/submissions` - 評価用コード提出（近日公開）
+
+## 🔒 セキュリティ
+
+- **認証**: セキュアパスワードハッシュ（bcrypt）付き JWT ベース
+- **認可**: 役割ベースアクセス制御（RBAC）
+- **CORS**: 設定可能なクロスオリジンリクエストポリシー
+- **レート制限**: 悪用防止のリクエストスロットリング
+- **入力検証**: Zod による包括的リクエスト検証
+- **Docker セキュリティ**: コンテナでの非 root ユーザー実行
+
+## 🚀 本番デプロイ
+
+### Docker デプロイ
+
+```bash
+# 本番イメージビルド
+docker-compose -f docker-compose.prod.yml build
+
+# 本番サービス開始
+docker-compose -f docker-compose.prod.yml up -d
+
+# 本番でマイグレーション実行
+docker-compose -f docker-compose.prod.yml exec api npm run db:migrate:prod
+```
+
+### 環境セットアップ
+
+1. 本番環境変数の設定
+2. JWT とデータベースパスワードに強力なシークレットを使用
+3. 適切なデータベースバックアップの設定
+4. SSL/TLS 証明書の設定
+5. モニタリングとログの設定
+
+## 🤝 貢献
+
+1. リポジトリをフォーク
+2. 機能ブランチ作成（`git checkout -b feature/amazing-feature`）
+3. コーディング規約に従って変更
+4. 新機能にテストを追加
+5. テストスイート実行（`./scripts/dev.sh test`）
+6. 変更をコミット（`git commit -m 'Add amazing feature'`）
+7. ブランチにプッシュ（`git push origin feature/amazing-feature`）
+8. プルリクエストを開く
+
+### 開発ガイドライン
+
+- TypeScript strict モードに従う
+- コードフォーマットに ESLint と Prettier を使用
+- 新機能にテストを記述
+- API 変更時はドキュメントを更新
+- セマンティックコミット規約に従う
+
+## 📝 ライセンス
+
+このプロジェクトは MIT ライセンスの下でライセンスされています - 詳細は [LICENSE](LICENSE) ファイルを参照してください。
+
+## 🙏 謝辞
+
+- 優れた React フレームワークの [Next.js](https://nextjs.org/)
+- 高速で低オーバーヘッドな Web フレームワークの [Fastify](https://www.fastify.io/)
+- 型安全なデータベースツールキットの [Prisma](https://www.prisma.io/)
+- アクセシブルな UI コンポーネントの [Radix UI](https://www.radix-ui.com/)
+- ユーティリティファースト CSS フレームワークの [Tailwind CSS](https://tailwindcss.com/)
+
+## 📞 サポート
+
+サポートとご質問について：
+
+- 📧 メール: support@skillgaug.com
+- 📖 ドキュメント: [docs/](docs/)
+- 🐛 バグ報告: GitHub Issues
+- 💬 ディスカッション: GitHub Discussions
+
+---
+
+**SkillGaug チームが ❤️ を込めて開発**
+
+May the Force be with you! ✨

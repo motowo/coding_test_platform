@@ -1,0 +1,27 @@
+{
+  "name": "skillgaug",
+  "version": "1.0.0",
+  "description": "SkillGaug - Modern coding assessment platform for technical hiring and skill evaluation",
+  "private": true,
+  "scripts": {
+    "lint": "npm run lint --workspace=api && npm run lint --workspace=web",
+    "format:check": "npm run format:check --workspace=api && npm run format:check --workspace=web",
+    "typecheck": "npm run typecheck --workspace=api && npm run typecheck --workspace=web",
+    "build:api": "npm run build --workspace=api",
+    "build:web": "npm run build --workspace=web", 
+    "test:unit:api": "npm run test:unit --workspace=api",
+    "test:unit:web": "npm run test:unit --workspace=web",
+    "test:integration:api": "npm run test:integration --workspace=api",
+    "test:e2e": "echo 'E2E tests not implemented yet'"
+  },
+  "workspaces": [
+    "api",
+    "web"
+  ],
+  "devDependencies": {
+    "prisma": "^6.13.0"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.13.0"
+  }
+}
