@@ -28,13 +28,13 @@
   ```bash
   # Method 1: Project一覧からTodoタスクを確認
   gh project item-list 2 --owner motowo --format json | \
-    jq -r '.items[] | select(.fieldValues[]?.name == "Todo") | "#\(.content.number)\t\(.content.title)"' 2>/dev/null
+    jq -r '.items[] | select(.status == "Todo") | "#\(.content.number)\t\(.content.title)"'
   
-  # Method 2: フォールバック - 未assignで開発可能なタスク
-  gh issue list --state open --no-assignee --label "mvp" --limit 10
+  # Method 2: 特定Issueの詳細確認（例: Issue #7 = T-003）
+  gh issue view 7 --json body,title,assignees,state,labels
   
-  # Method 3: 特定Issueの詳細確認（例: Issue #6 = T-002）
-  gh issue view 6 --json body,title,assignees,state,labels
+  # Method 3: フォールバック - 未assignで開発可能なタスク（Project利用不可時のみ）
+  gh issue list --state open --assignee "" --label "mvp" --limit 10
   ```
 - Project ビューで `Status=Todo` を抽出し、優先度/Milestone/label:mvp を考慮して対象を選ぶ
 - Issue 本文の `Depends on:` と Issueリンク（is blocked by）を確認
