@@ -1,0 +1,116 @@
+name: "PR Draft to Issue Status Sync"
+
+on:
+  pull_request:
+    types: [opened, converted_to_draft, ready_for_review, closed]
+
+env:
+  PROJECT_OWNER_LOGIN: motowo
+  PROJECT_NUMBER: '2'
+
+jobs:
+  sync-status:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Extract issue number from PR
+        id: extract-issue
+        run: |
+          PR_BODY="${{ github.event.pull_request.body }}"
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          
+          # Extract first issue number from PR body or title
+          ISSUE=$(echo "$PR_BODY $PR_TITLE" | grep -oE 'refs\s*#([0-9]+)|#([0-9]+)' | head -1 | grep -oE '[0-9]+' || echo "")
+          
+          if [ -n "$ISSUE" ]; then
+            echo "Found issue: #$ISSUE"
+            echo "issue_number=$ISSUE" >> "$GITHUB_OUTPUT"
+          else
+            echo "No issue number found"
+            echo "issue_number=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Determine status
+        id: status
+        run: |
+          ACTION="${{ github.event.action }}"
+          IS_DRAFT="${{ github.event.pull_request.draft }}"
+          IS_MERGED="${{ github.event.pull_request.merged }}"
+          
+          case "$ACTION" in
+            opened|converted_to_draft)
+              echo "status=In Progress" >> "$GITHUB_OUTPUT"
+              echo "reason=PR $ACTION" >> "$GITHUB_OUTPUT"
+              ;;
+            ready_for_review)  
+              echo "status=In Progress" >> "$GITHUB_OUTPUT"
+              echo "reason=PR ready for review" >> "$GITHUB_OUTPUT"
+              ;;
+            closed)
+              if [ "$IS_MERGED" = "true" ]; then
+                echo "status=Done" >> "$GITHUB_OUTPUT"
+                echo "reason=PR merged" >> "$GITHUB_OUTPUT"
+              else
+                echo "status=Todo" >> "$GITHUB_OUTPUT"
+                echo "reason=PR closed without merge" >> "$GITHUB_OUTPUT"
+              fi
+              ;;
+            *)
+              echo "status=" >> "$GITHUB_OUTPUT"
+              echo "reason=No action needed" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Update issue status
+        if: steps.extract-issue.outputs.issue_number != '' && steps.status.outputs.status != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+          OWNER: ${{ env.PROJECT_OWNER_LOGIN }}
+          PROJECT: ${{ env.PROJECT_NUMBER }}
+          REPO: ${{ github.repository }}
+          ISSUE: ${{ steps.extract-issue.outputs.issue_number }}
+          STATUS: ${{ steps.status.outputs.status }}
+          REASON: ${{ steps.status.outputs.reason }}
+        run: |
+          echo "Updating Issue #$ISSUE to status: $STATUS"
+          echo "Reason: $REASON"
+          
+          # Check if issue exists and is open
+          if ! gh issue view "$ISSUE" --json state --jq '.state' | grep -q "OPEN"; then
+            echo "Issue #$ISSUE is not open, skipping"
+            exit 0
+          fi
+          
+          # Resolve issue URL
+          URL="https://github.com/$REPO/issues/$ISSUE"
+          
+          # Find project item
+          ITEM_ID=$(gh project item-list "$PROJECT" --owner "$OWNER" --format json | jq -r --arg url "$URL" '.items[] | select(.content.type=="Issue" and .content.url==$url) | .id' || echo "")
+          
+          if [ -z "$ITEM_ID" ]; then
+            echo "Adding Issue #$ISSUE to project..."
+            ITEM_ID=$(gh project item-add "$PROJECT" --owner "$OWNER" --url "$URL" --format json | jq -r '.id' || echo "")
+          fi
+          
+          if [ -n "$ITEM_ID" ]; then
+            echo "Setting status to: $STATUS"
+            if gh project item-edit "$PROJECT" --owner "$OWNER" --id "$ITEM_ID" --field "Status" --name "$STATUS"; then
+              echo "✅ Successfully updated Issue #$ISSUE status to: $STATUS"
+              
+              # Add comment to issue
+              gh issue comment "$ISSUE" --body "🤖 **自動ステータス更新**
+
+**変更**: Status → \`$STATUS\`  
+**理由**: $REASON
+**PR**: #${{ github.event.pull_request.number }}
+
+PR状態の変更により自動実行されました。" || echo "Comment failed"
+            else
+              echo "❌ Failed to update status"
+            fi
+          else
+            echo "❌ Could not add/find item in project"
+          fi
