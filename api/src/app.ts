@@ -1,6 +1,7 @@
 import Fastify, { type FastifyInstance } from 'fastify'
 import { PrismaClient } from '@prisma/client'
 import Redis from 'ioredis'
+import { executeRoutes } from './routes/execute'
 
 export interface AppOptions {
   logger?: {
@@ -169,5 +170,11 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
     }
   })
 
+  // Register execute routes for code execution
+  app.register(executeRoutes)
+
   return app
 }
+
+// Alias for backwards compatibility with tests
+export const buildApp = createApp
