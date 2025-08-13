@@ -12,7 +12,7 @@ jobs:
   sync-pr-to-issue-status:
     runs-on: ubuntu-latest
     permissions:
-      issues: read
+      issues: write
       pull-requests: read
       contents: read
     steps:
@@ -24,7 +24,7 @@ jobs:
           
           # Extract issue numbers from PR body and title
           # Pattern: closes #123, refs #123, #123
-          ISSUES=$(echo "$PR_BODY $PR_TITLE" | grep -oE '(closes|refs|#)\s*#?([0-9]+)' | grep -oE '[0-9]+' | sort -u | tr '\n' ' ')
+          ISSUES=$(echo "$PR_BODY $PR_TITLE" | grep -oE '(closes|refs)\s*#([0-9]+)|#([0-9]+)' | grep -oE '[0-9]+' | sort -u | tr '\n' ' ')
           
           if [ -n "$ISSUES" ]; then
             echo "Found issues: $ISSUES"
