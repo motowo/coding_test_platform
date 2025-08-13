@@ -5,6 +5,7 @@ import { problemRoutes } from './problems'
 import { assessmentRoutes } from './assessments'
 import { submissionRoutes } from './submissions'
 import { languageRoutes } from './languages'
+import { executeRoutes } from './execute'
 
 export async function setupRoutes(server: FastifyInstance) {
   // API prefix
@@ -18,6 +19,9 @@ export async function setupRoutes(server: FastifyInstance) {
     await server.register(assessmentRoutes, { prefix: '/assessments' })
     await server.register(submissionRoutes, { prefix: '/submissions' })
     await server.register(languageRoutes, { prefix: '/languages' })
+    
+    // Code execution routes (no auth required for testing)
+    await server.register(executeRoutes)
     
   }, { prefix: '/api/v1' })
 
