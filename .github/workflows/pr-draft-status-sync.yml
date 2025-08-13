@@ -42,11 +42,11 @@ jobs:
           
           case "$ACTION" in
             opened|converted_to_draft)
-              echo "status=In Progress" >> "$GITHUB_OUTPUT"
+              echo 'status=In Progress' >> "$GITHUB_OUTPUT"
               echo "reason=PR $ACTION" >> "$GITHUB_OUTPUT"
               ;;
             ready_for_review)  
-              echo "status=In Progress" >> "$GITHUB_OUTPUT"
+              echo 'status=In Progress' >> "$GITHUB_OUTPUT"
               echo "reason=PR ready for review" >> "$GITHUB_OUTPUT"
               ;;
             closed)
@@ -97,14 +97,14 @@ jobs:
           
           if [ -n "$ITEM_ID" ]; then
             echo "Setting status to: $STATUS"
-            if gh project item-edit "$PROJECT" --owner "$OWNER" --id "$ITEM_ID" --field "Status" --name "$STATUS"; then
+            if gh project item-edit "$PROJECT" --owner "$OWNER" --id "$ITEM_ID" --field "Status" --single-select-option-name "$STATUS"; then
               echo "✅ Successfully updated Issue #$ISSUE status to: $STATUS"
               
-              # Add comment to issue
+              # Add comment to issue  
               gh issue comment "$ISSUE" --body "🤖 **自動ステータス更新**
 
-**変更**: Status → \`$STATUS\`  
-**理由**: $REASON
+**変更**: Status → \`${STATUS}\`  
+**理由**: ${REASON}
 **PR**: #${{ github.event.pull_request.number }}
 
 PR状態の変更により自動実行されました。" || echo "Comment failed"
