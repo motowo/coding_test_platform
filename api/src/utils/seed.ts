@@ -282,7 +282,7 @@ merging them into one sorted list:
 
     // 5. Create Test Cases
     logger.info('🧪 Creating test cases...')
-    
+
     // Two Sum test cases
     await Promise.all([
       prisma.testCase.create({
@@ -429,7 +429,8 @@ merging them into one sorted list:
     const assessment = await prisma.assessment.create({
       data: {
         title: 'Junior Developer Assessment',
-        description: 'This assessment evaluates basic programming skills for junior developer positions.',
+        description:
+          'This assessment evaluates basic programming skills for junior developer positions.',
         timeLimitMinutes: 90,
         preAssessmentGuide: `# Welcome to SkillGaug Assessment
 
@@ -521,7 +522,6 @@ Thank you for your interest in our company!`,
   - Creator: creator@skillgaug.local / password123  
   - Recruiter: recruiter@skillgaug.local / password123
   - Candidate: john.doe@example.com / password123`)
-
   } catch (error) {
     logger.error(error as Error, '❌ Database seeding failed')
     throw error

@@ -50,7 +50,7 @@ export const SUPPORTED_LANGUAGES: Record<string, LanguageConfig> = {
     command: (code: string) => ['node', '-e', code],
     timeout: 5000,
     memoryLimit: 128 * 1024 * 1024, // 128MB
-    cpuShares: 512
+    cpuShares: 512,
   },
   python: {
     name: 'Python',
@@ -58,8 +58,8 @@ export const SUPPORTED_LANGUAGES: Record<string, LanguageConfig> = {
     command: (code: string) => ['python', '-c', code],
     timeout: 5000,
     memoryLimit: 128 * 1024 * 1024, // 128MB
-    cpuShares: 512
-  }
+    cpuShares: 512,
+  },
 }
 
 export const SECURITY_CONSTRAINTS = {
@@ -70,8 +70,5 @@ export const SECURITY_CONSTRAINTS = {
   ALLOWED_USERS: ['nobody'],
   ALLOWED_WORK_DIRS: ['/tmp'],
   DANGEROUS_ENV_VARS: ['PATH', 'LD_LIBRARY_PATH', 'HOME', 'USER', 'SHELL'],
-  ALLOWED_IMAGES: [
-    'node:18-alpine',
-    'python:3.11-alpine'
-  ]
+  ALLOWED_IMAGES: ['node:18-alpine', 'python:3.11-alpine'],
 } as const

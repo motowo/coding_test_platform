@@ -13,9 +13,9 @@ describe('Advanced Health Check with External Services', () => {
     prisma = new PrismaClient({
       datasources: {
         db: {
-          url: process.env['DATABASE_URL']
-        }
-      }
+          url: process.env['DATABASE_URL'],
+        },
+      },
     })
 
     redis = new Redis(process.env['REDIS_URL'] || 'redis://localhost:6379')
@@ -23,9 +23,9 @@ describe('Advanced Health Check with External Services', () => {
     app = createApp({
       logger: { level: 'silent' },
       prisma,
-      redis
+      redis,
     })
-    
+
     await app.ready()
   })
 
@@ -40,7 +40,7 @@ describe('Advanced Health Check with External Services', () => {
       // このテストは現時点では失敗するはず（エンドポイントが未実装）
       const response = await app.inject({
         method: 'GET',
-        url: '/health/detailed'
+        url: '/health/detailed',
       })
 
       expect(response.statusCode).toBe(200)
@@ -51,14 +51,14 @@ describe('Advanced Health Check with External Services', () => {
         services: {
           database: {
             status: 'healthy',
-            responseTimeMs: expect.any(Number)
+            responseTimeMs: expect.any(Number),
           },
           redis: {
             status: 'healthy',
-            responseTimeMs: expect.any(Number)
-          }
+            responseTimeMs: expect.any(Number),
+          },
         },
-        uptime: expect.any(Number)
+        uptime: expect.any(Number),
       })
     })
 
@@ -66,20 +66,20 @@ describe('Advanced Health Check with External Services', () => {
       // データベース接続が失敗する状況をテスト
       // 実際の実装では、接続エラー時は500を返すべき
       const mockPrisma = {
-        $queryRaw: vi.fn().mockRejectedValue(new Error('Database connection failed'))
+        $queryRaw: vi.fn().mockRejectedValue(new Error('Database connection failed')),
       } as unknown as PrismaClient
-      
+
       const appWithFailingDb = createApp({
         logger: { level: 'silent' },
         prisma: mockPrisma,
-        redis
+        redis,
       })
-      
+
       await appWithFailingDb.ready()
 
       const response = await appWithFailingDb.inject({
         method: 'GET',
-        url: '/health/detailed'
+        url: '/health/detailed',
       })
 
       expect(response.statusCode).toBe(503)
@@ -90,13 +90,13 @@ describe('Advanced Health Check with External Services', () => {
         services: {
           database: {
             status: 'unhealthy',
-            error: 'Database connection failed'
+            error: 'Database connection failed',
           },
           redis: {
             status: 'healthy',
-            responseTimeMs: expect.any(Number)
-          }
-        }
+            responseTimeMs: expect.any(Number),
+          },
+        },
       })
 
       await appWithFailingDb.close()
@@ -108,7 +108,7 @@ describe('Advanced Health Check with External Services', () => {
       // Readiness probe用のエンドポイント（未実装なので失敗する）
       const response = await app.inject({
         method: 'GET',
-        url: '/health/readiness'
+        url: '/health/readiness',
       })
 
       expect(response.statusCode).toBe(200)
@@ -118,8 +118,8 @@ describe('Advanced Health Check with External Services', () => {
         version: expect.any(String),
         checks: {
           database: 'ready',
-          redis: 'ready'
-        }
+          redis: 'ready',
+        },
       })
     })
   })
@@ -129,7 +129,7 @@ describe('Advanced Health Check with External Services', () => {
       // Liveness probe用のエンドポイント（未実装なので失敗する）
       const response = await app.inject({
         method: 'GET',
-        url: '/health/liveness'
+        url: '/health/liveness',
       })
 
       expect(response.statusCode).toBe(200)
@@ -137,7 +137,7 @@ describe('Advanced Health Check with External Services', () => {
         status: 'alive',
         timestamp: expect.any(String),
         version: expect.any(String),
-        uptime: expect.any(Number)
+        uptime: expect.any(Number),
       })
     })
   })

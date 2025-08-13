@@ -45,18 +45,18 @@ async function start() {
       try {
         // Check database connection
         await prisma.$queryRaw`SELECT 1`
-        
+
         // Check Redis connection
         await redis.ping()
 
-        return { 
+        return {
           status: 'healthy',
           timestamp: new Date().toISOString(),
           version: '1.0.0',
           services: {
             database: 'healthy',
-            redis: 'healthy'
-          }
+            redis: 'healthy',
+          },
         }
       } catch (error) {
         server.log.error(error, 'Health check failed')
@@ -65,14 +65,15 @@ async function start() {
     })
 
     // Start server
-    await server.listen({ 
-      host: config.server.host, 
-      port: config.server.port 
+    await server.listen({
+      host: config.server.host,
+      port: config.server.port,
     })
 
     logger.info(`🚀 Server ready at http://${config.server.host}:${config.server.port}`)
-    logger.info(`📚 Swagger UI available at http://${config.server.host}:${config.server.port}/documentation`)
-
+    logger.info(
+      `📚 Swagger UI available at http://${config.server.host}:${config.server.port}/documentation`
+    )
   } catch (error) {
     logger.error(error, 'Failed to start server')
     process.exit(1)
@@ -82,7 +83,7 @@ async function start() {
 // Graceful shutdown
 const gracefulShutdown = async (signal: string) => {
   logger.info(`Received ${signal}, shutting down gracefully`)
-  
+
   try {
     await server.close()
     await prisma.$disconnect()

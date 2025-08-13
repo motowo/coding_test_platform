@@ -18,26 +18,26 @@ describe('Error Handling', () => {
     it('should return 404 for non-existent endpoints', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/non-existent-endpoint'
+        url: '/non-existent-endpoint',
       })
 
       expect(response.statusCode).toBe(404)
       expect(response.json()).toEqual({
         error: 'Not Found',
         statusCode: 404,
-        message: 'Route GET:/non-existent-endpoint not found'
+        message: 'Route GET:/non-existent-endpoint not found',
       })
     })
 
     it('should return proper 404 response structure', async () => {
       const response = await app.inject({
         method: 'POST',
-        url: '/invalid/path'
+        url: '/invalid/path',
       })
 
       expect(response.statusCode).toBe(404)
       expect(response.headers['content-type']).toContain('application/json')
-      
+
       const body = response.json()
       expect(body).toHaveProperty('error')
       expect(body).toHaveProperty('statusCode', 404)
@@ -50,7 +50,7 @@ describe('Error Handling', () => {
       // /health は GET のみサポートするはず
       const response = await app.inject({
         method: 'POST',
-        url: '/health'
+        url: '/health',
       })
 
       expect(response.statusCode).toBe(404) // Fastifyでは404が返される

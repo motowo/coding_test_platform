@@ -5,17 +5,17 @@ const mockContainer = {
   start: vi.fn(),
   wait: vi.fn(),
   logs: vi.fn(),
-  remove: vi.fn()
+  remove: vi.fn(),
 }
 
 const mockDocker = {
   createContainer: vi.fn(),
-  getContainer: vi.fn(() => mockContainer)
+  getContainer: vi.fn(() => mockContainer),
 }
 
 vi.mock('dockerode', () => {
   return {
-    default: vi.fn(() => mockDocker)
+    default: vi.fn(() => mockDocker),
   }
 })
 
@@ -54,7 +54,7 @@ describe('DockerRunner', () => {
         user: 'nobody',
         workingDir: '/tmp',
         readOnlyRootFs: true,
-        environment: {}
+        environment: {},
       }
 
       const result = await dockerRunner.runCode(config)
@@ -64,7 +64,7 @@ describe('DockerRunner', () => {
         output: 'Hello World',
         error: '',
         exitCode: 0,
-        executionTime: expect.any(Number)
+        executionTime: expect.any(Number),
       })
 
       // Verify container creation with security settings
@@ -84,8 +84,8 @@ describe('DockerRunner', () => {
           AutoRemove: false,
           NetworkMode: 'none',
           Memory: 128 * 1024 * 1024,
-          CpuShares: 512
-        }
+          CpuShares: 512,
+        },
       })
 
       expect(mockContainer.start).toHaveBeenCalled()
@@ -111,7 +111,7 @@ describe('DockerRunner', () => {
         user: 'nobody',
         workingDir: '/tmp',
         readOnlyRootFs: true,
-        environment: {}
+        environment: {},
       }
 
       const result = await dockerRunner.runCode(config)
@@ -124,14 +124,14 @@ describe('DockerRunner', () => {
     it('should enforce timeout limits', async () => {
       mockDocker.createContainer.mockResolvedValue({ id: 'timeout-container' })
       mockContainer.start.mockResolvedValue({})
-      
+
       // Mock long-running container
       mockContainer.wait.mockImplementation(() => {
         return new Promise((resolve) => {
           setTimeout(() => resolve({ StatusCode: 124 }), 10000) // 10 seconds
         })
       })
-      
+
       mockContainer.remove.mockResolvedValue({})
 
       const config: ExecutionConfig = {
@@ -144,7 +144,7 @@ describe('DockerRunner', () => {
         user: 'nobody',
         workingDir: '/tmp',
         readOnlyRootFs: true,
-        environment: {}
+        environment: {},
       }
 
       const startTime = Date.now()
@@ -172,7 +172,7 @@ describe('DockerRunner', () => {
         user: 'nobody',
         workingDir: '/tmp',
         readOnlyRootFs: true,
-        environment: {}
+        environment: {},
       }
 
       await expect(dockerRunner.runCode(config)).rejects.toThrow('Start failed')
@@ -197,8 +197,8 @@ describe('DockerRunner', () => {
         workingDir: '/tmp',
         readOnlyRootFs: true,
         environment: {
-          TEST_VAR: 'test_value'
-        }
+          TEST_VAR: 'test_value',
+        },
       }
 
       await dockerRunner.runCode(config)
@@ -221,8 +221,8 @@ describe('DockerRunner', () => {
         environment: {
           PATH: '/malicious/path',
           LD_LIBRARY_PATH: '/malicious/lib',
-          HOME: '/root' // Should be filtered out
-        }
+          HOME: '/root', // Should be filtered out
+        },
       }
 
       await expect(dockerRunner.runCode(config)).rejects.toThrow(/dangerous.*environment/i)
@@ -241,7 +241,7 @@ describe('DockerRunner', () => {
         user: 'nobody',
         workingDir: '/tmp',
         readOnlyRootFs: true,
-        environment: {}
+        environment: {},
       }
 
       await dockerRunner.runCode(config)
@@ -260,10 +260,10 @@ describe('DockerRunner', () => {
         'node:18-alpine',
         'python:3.11-alpine',
         'openjdk:11-alpine',
-        'golang:1.19-alpine'
+        'golang:1.19-alpine',
       ]
 
-      safeImages.forEach(image => {
+      safeImages.forEach((image) => {
         expect(dockerRunner.isImageSafe(image)).toBe(true)
       })
     })
@@ -273,10 +273,10 @@ describe('DockerRunner', () => {
         'ubuntu:latest',
         'malicious/image',
         'node:18', // Not alpine
-        'custom-image:latest'
+        'custom-image:latest',
       ]
 
-      unsafeImages.forEach(image => {
+      unsafeImages.forEach((image) => {
         expect(dockerRunner.isImageSafe(image)).toBe(false)
       })
     })
@@ -294,7 +294,7 @@ describe('DockerRunner', () => {
         user: 'nobody',
         workingDir: '/tmp',
         readOnlyRootFs: true,
-        environment: {}
+        environment: {},
       }
 
       expect(() => dockerRunner.validateConfig(validConfig)).not.toThrow()
@@ -311,7 +311,7 @@ describe('DockerRunner', () => {
         user: 'root', // Dangerous: root user
         workingDir: '/tmp',
         readOnlyRootFs: false, // Dangerous: writable root filesystem
-        environment: {}
+        environment: {},
       } as ExecutionConfig
 
       expect(() => dockerRunner.validateConfig(privilegedConfig)).toThrow(/security.*violation/i)

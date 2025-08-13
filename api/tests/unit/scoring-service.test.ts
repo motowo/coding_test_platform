@@ -6,12 +6,12 @@ const mockDockerAPI = {
   startContainer: vi.fn(),
   waitContainer: vi.fn(),
   getLogs: vi.fn(),
-  removeContainer: vi.fn()
+  removeContainer: vi.fn(),
 }
 
 vi.mock('dockerode', () => {
   return {
-    default: vi.fn(() => mockDockerAPI)
+    default: vi.fn(() => mockDockerAPI),
   }
 })
 
@@ -43,14 +43,14 @@ describe('ScoringService', () => {
         language: 'javascript',
         code: 'console.log("Hello, World!")',
         input: '',
-        timeout: 5000
+        timeout: 5000,
       })
 
       expect(result).toEqual({
         success: true,
         output: 'Hello, World!\n',
         error: null,
-        executionTime: expect.any(Number)
+        executionTime: expect.any(Number),
       })
 
       // Verify container lifecycle
@@ -66,8 +66,8 @@ describe('ScoringService', () => {
         WorkingDir: '/tmp',
         HostConfig: {
           ReadonlyRootfs: true,
-          AutoRemove: false
-        }
+          AutoRemove: false,
+        },
       })
       expect(mockDockerAPI.startContainer).toHaveBeenCalled()
       expect(mockDockerAPI.removeContainer).toHaveBeenCalled()
@@ -84,12 +84,12 @@ describe('ScoringService', () => {
         language: 'python',
         code: 'print("Python output")',
         input: '',
-        timeout: 5000
+        timeout: 5000,
       })
 
       expect(result.success).toBe(true)
       expect(result.output).toBe('Python output\n')
-      
+
       expect(mockDockerAPI.createContainer).toHaveBeenCalledWith({
         Image: 'python:3.11-alpine',
         Cmd: ['python', '-c', 'print("Python output")'],
@@ -102,8 +102,8 @@ describe('ScoringService', () => {
         WorkingDir: '/tmp',
         HostConfig: {
           ReadonlyRootfs: true,
-          AutoRemove: false
-        }
+          AutoRemove: false,
+        },
       })
     })
 
@@ -118,14 +118,14 @@ describe('ScoringService', () => {
         language: 'javascript',
         code: 'throw new Error("Test error")',
         input: '',
-        timeout: 5000
+        timeout: 5000,
       })
 
       expect(result).toEqual({
         success: false,
         output: '',
         error: 'Error: Test error\n',
-        executionTime: expect.any(Number)
+        executionTime: expect.any(Number),
       })
     })
 
@@ -144,7 +144,7 @@ describe('ScoringService', () => {
         language: 'javascript',
         code: 'while(true) {}',
         input: '',
-        timeout: 1000 // 1 second timeout
+        timeout: 1000, // 1 second timeout
       })
 
       expect(result.success).toBe(false)
@@ -163,7 +163,7 @@ describe('ScoringService', () => {
         language: 'javascript',
         code: 'console.log("test")',
         input: '',
-        timeout: 5000
+        timeout: 5000,
       })
 
       expect(mockDockerAPI.removeContainer).toHaveBeenCalledWith('container-cleanup')
@@ -174,23 +174,27 @@ describe('ScoringService', () => {
       mockDockerAPI.startContainer.mockRejectedValue(new Error('Container start failed'))
       mockDockerAPI.removeContainer.mockResolvedValue({})
 
-      await expect(scoringService.executeCode({
-        language: 'javascript',
-        code: 'console.log("test")',
-        input: '',
-        timeout: 5000
-      })).rejects.toThrow()
+      await expect(
+        scoringService.executeCode({
+          language: 'javascript',
+          code: 'console.log("test")',
+          input: '',
+          timeout: 5000,
+        })
+      ).rejects.toThrow()
 
       expect(mockDockerAPI.removeContainer).toHaveBeenCalledWith('container-error-cleanup')
     })
 
     it('should validate language support', async () => {
-      await expect(scoringService.executeCode({
-        language: 'unsupported-lang',
-        code: 'test code',
-        input: '',
-        timeout: 5000
-      })).rejects.toThrow('Unsupported language: unsupported-lang')
+      await expect(
+        scoringService.executeCode({
+          language: 'unsupported-lang',
+          code: 'test code',
+          input: '',
+          timeout: 5000,
+        })
+      ).rejects.toThrow('Unsupported language: unsupported-lang')
     })
 
     it('should enforce security constraints', async () => {
@@ -200,11 +204,11 @@ describe('ScoringService', () => {
         language: 'javascript',
         code: 'console.log("test")',
         input: '',
-        timeout: 5000
+        timeout: 5000,
       })
 
       const createCall = mockDockerAPI.createContainer.mock.calls[0][0]
-      
+
       // Verify security settings
       expect(createCall.NetworkMode).toBe('none') // No network access
       expect(createCall.User).toBe('nobody') // Non-root user
@@ -217,7 +221,7 @@ describe('ScoringService', () => {
   describe('getSupportedLanguages', () => {
     it('should return list of supported languages', () => {
       const languages = scoringService.getSupportedLanguages()
-      
+
       expect(languages).toContain('javascript')
       expect(languages).toContain('python')
       expect(languages).toBeInstanceOf(Array)

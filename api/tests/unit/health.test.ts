@@ -18,21 +18,21 @@ describe('Health Check API', () => {
     it('should return health status with 200', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/health'
+        url: '/health',
       })
 
       expect(response.statusCode).toBe(200)
       expect(response.json()).toEqual({
         status: 'ok',
         timestamp: expect.any(String),
-        version: expect.any(String)
+        version: expect.any(String),
       })
     })
 
     it('should have proper response headers', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/health'
+        url: '/health',
       })
 
       expect(response.headers['content-type']).toContain('application/json')

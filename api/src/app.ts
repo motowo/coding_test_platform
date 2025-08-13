@@ -14,8 +14,8 @@ export interface AppOptions {
 export function createApp(options: AppOptions = {}): FastifyInstance {
   const app = Fastify({
     logger: options.logger || {
-      level: process.env['NODE_ENV'] === 'production' ? 'warn' : 'info'
-    }
+      level: process.env['NODE_ENV'] === 'production' ? 'warn' : 'info',
+    },
   })
 
   // Conditionally decorate with external services
@@ -29,14 +29,14 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
   // Common response helpers
   const getAppMetadata = () => ({
     timestamp: new Date().toISOString(),
-    version: process.env['npm_package_version'] || '1.0.0'
+    version: process.env['npm_package_version'] || '1.0.0',
   })
 
   // Basic health check endpoint
   app.get('/health', async () => {
     return {
       status: 'ok',
-      ...getAppMetadata()
+      ...getAppMetadata(),
     }
   })
 
@@ -46,26 +46,24 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
     const uptime = process.uptime()
 
     try {
-      const services: Record<string, { status: string; responseTimeMs?: number; error?: string }> = {}
+      const services: Record<string, { status: string; responseTimeMs?: number; error?: string }> =
+        {}
       let hasUnhealthyService = false
 
       // Helper function to check service health
-      const checkService = async (
-        name: string,
-        checkFn: () => Promise<void>
-      ): Promise<void> => {
+      const checkService = async (name: string, checkFn: () => Promise<void>): Promise<void> => {
         const start = Date.now()
         try {
           await checkFn()
           services[name] = {
             status: 'healthy',
-            responseTimeMs: Date.now() - start
+            responseTimeMs: Date.now() - start,
           }
         } catch (error: unknown) {
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           services[name] = {
             status: 'unhealthy',
-            error: errorMessage
+            error: errorMessage,
           }
           hasUnhealthyService = true
         }
@@ -86,7 +84,7 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
       const responseData = {
         status: hasUnhealthyService ? 'unhealthy' : 'healthy',
         ...metadata,
-        services
+        services,
       }
 
       if (hasUnhealthyService) {
@@ -95,14 +93,14 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
 
       return {
         ...responseData,
-        uptime
+        uptime,
       }
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       return reply.status(503).send({
         status: 'unhealthy',
         ...metadata,
-        error: errorMessage
+        error: errorMessage,
       })
     }
   })
@@ -128,16 +126,16 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
       return {
         status: 'ready',
         ...metadata,
-        checks
+        checks,
       }
     } catch (error: unknown) {
       checks['database'] = 'not ready'
       checks['redis'] = 'not ready'
-      
+
       return reply.status(503).send({
         status: 'not ready',
         ...metadata,
-        checks
+        checks,
       })
     }
   })
@@ -147,26 +145,26 @@ export function createApp(options: AppOptions = {}): FastifyInstance {
     return {
       status: 'alive',
       ...getAppMetadata(),
-      uptime: process.uptime()
+      uptime: process.uptime(),
     }
   })
 
   // Application configuration endpoint
   app.get('/api/config', async () => {
     const environment = process.env['NODE_ENV'] || 'development'
-    
+
     return {
       ...getAppMetadata(),
       environment,
       features: {
         authentication: false, // Not implemented yet
-        rateLimit: false,      // Not implemented yet  
-        swagger: false         // Not implemented yet
+        rateLimit: false, // Not implemented yet
+        swagger: false, // Not implemented yet
       },
       limits: {
-        maxRequestSize: 1048576,  // 1MB
-        requestTimeoutMs: 30000   // 30 seconds
-      }
+        maxRequestSize: 1048576, // 1MB
+        requestTimeoutMs: 30000, // 30 seconds
+      },
     }
   })
 

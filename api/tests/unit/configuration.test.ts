@@ -19,7 +19,7 @@ describe('Application Configuration', () => {
       // このエンドポイントは未実装なので失敗するはず
       const response = await app.inject({
         method: 'GET',
-        url: '/api/config'
+        url: '/api/config',
       })
 
       expect(response.statusCode).toBe(200)
@@ -30,23 +30,23 @@ describe('Application Configuration', () => {
         features: {
           authentication: expect.any(Boolean),
           rateLimit: expect.any(Boolean),
-          swagger: expect.any(Boolean)
+          swagger: expect.any(Boolean),
         },
         limits: {
           maxRequestSize: expect.any(Number),
-          requestTimeoutMs: expect.any(Number)
-        }
+          requestTimeoutMs: expect.any(Number),
+        },
       })
     })
 
     it('should not expose sensitive configuration', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/api/config'
+        url: '/api/config',
       })
 
       const config = response.json()
-      
+
       // センシティブな情報が含まれていないことを確認
       expect(config).not.toHaveProperty('databaseUrl')
       expect(config).not.toHaveProperty('redisUrl')
