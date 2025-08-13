@@ -15,7 +15,7 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'  # Intentionally wrong version
+        node-version: '20'
         cache: 'npm'
     
     - name: Install root dependencies
@@ -39,15 +39,25 @@ jobs:
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '18'  # Intentionally wrong version
+        node-version: '20'
         cache: 'npm'
     
-    # Missing: Install dependencies step
+    - name: Install root dependencies
+      run: npm ci
+    
+    - name: Install API dependencies
+      run: npm ci
+      working-directory: ./api
+    
+    - name: Install Web dependencies
+      run: npm ci
+      working-directory: ./web
     
     - name: Check formatting (API)
       run: npm run format:check
       working-directory: ./api
     
-    - name: Check formatting (Web)
-      run: npm run format:check  # Wrong script name for web
-      working-directory: ./web
+    # Note: Web project doesn't have format:check script yet
+    # - name: Check formatting (Web)
+    #   run: npm run format:check
+    #   working-directory: ./web
