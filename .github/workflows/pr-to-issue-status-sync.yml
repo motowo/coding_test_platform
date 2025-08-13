@@ -1,0 +1,133 @@
+name: "PR to Issue Status Sync"
+
+on:
+  pull_request:
+    types: [opened, converted_to_draft, ready_for_review, closed]
+
+env:
+  PROJECT_OWNER_LOGIN: motowo
+  PROJECT_NUMBER: '2'
+
+jobs:
+  sync-pr-to-issue-status:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: read
+      pull-requests: read
+      contents: read
+    steps:
+      - name: Extract issue numbers from PR
+        id: extract-issues
+        run: |
+          PR_BODY='${{ github.event.pull_request.body }}'
+          PR_TITLE='${{ github.event.pull_request.title }}'
+          
+          # Extract issue numbers from PR body and title
+          # Pattern: closes #123, refs #123, #123
+          ISSUES=$(echo "$PR_BODY $PR_TITLE" | grep -oE '(closes|refs|#)\s*#?([0-9]+)' | grep -oE '[0-9]+' | sort -u | tr '\n' ' ')
+          
+          if [ -n "$ISSUES" ]; then
+            echo "Found issues: $ISSUES"
+            echo "issues=$ISSUES" >> "$GITHUB_OUTPUT"
+          else
+            echo "No issues found in PR"
+            echo "issues=" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Determine target status
+        id: target-status
+        run: |
+          ACTION='${{ github.event.action }}'
+          IS_DRAFT='${{ github.event.pull_request.draft }}'
+          
+          case "$ACTION" in
+            opened|converted_to_draft)
+              if [ "$IS_DRAFT" = "true" ]; then
+                echo "status=In Progress" >> "$GITHUB_OUTPUT"
+                echo "reason=PR opened/converted as draft" >> "$GITHUB_OUTPUT"
+              else
+                echo "status=In Progress" >> "$GITHUB_OUTPUT"
+                echo "reason=PR opened as ready" >> "$GITHUB_OUTPUT"
+              fi
+              ;;
+            ready_for_review)
+              echo "status=In Progress" >> "$GITHUB_OUTPUT"
+              echo "reason=PR ready for review" >> "$GITHUB_OUTPUT"
+              ;;
+            closed)
+              if [ '${{ github.event.pull_request.merged }}' = 'true' ]; then
+                echo "status=Done" >> "$GITHUB_OUTPUT"
+                echo "reason=PR merged" >> "$GITHUB_OUTPUT"
+              else
+                echo "status=Todo" >> "$GITHUB_OUTPUT"
+                echo "reason=PR closed without merge" >> "$GITHUB_OUTPUT"
+              fi
+              ;;
+            *)
+              echo "status=" >> "$GITHUB_OUTPUT"
+              echo "reason=No status change needed for action: $ACTION" >> "$GITHUB_OUTPUT"
+              ;;
+          esac
+
+      - name: Update issue status in project
+        if: steps.extract-issues.outputs.issues != '' && steps.target-status.outputs.status != ''
+        env:
+          GH_TOKEN: ${{ secrets.PROJECT_PAT }}
+          OWNER: ${{ env.PROJECT_OWNER_LOGIN }}
+          PROJECT: ${{ env.PROJECT_NUMBER }}
+          REPO: ${{ github.repository }}
+          ISSUES: ${{ steps.extract-issues.outputs.issues }}
+          STATUS_NAME: ${{ steps.target-status.outputs.status }}
+          REASON: ${{ steps.target-status.outputs.reason }}
+        run: |
+          set -euo pipefail
+          
+          echo "Updating issues to status: $STATUS_NAME"
+          echo "Reason: $REASON"
+          
+          for ISSUE in $ISSUES; do
+            echo "Processing Issue #$ISSUE"
+            
+            # Resolve issue URL
+            URL="https://github.com/$REPO/issues/$ISSUE"
+            
+            # Check if issue exists and is open
+            ISSUE_STATE=$(gh issue view "$ISSUE" --json state --jq '.state' 2>/dev/null || echo "NOT_FOUND")
+            if [ "$ISSUE_STATE" != "OPEN" ]; then
+              echo "Issue #$ISSUE is not open ($ISSUE_STATE), skipping"
+              continue
+            fi
+            
+            # Lookup existing item in the project
+            existing=$(gh project item-list "$PROJECT" --owner "$OWNER" --format json | jq -r --arg url "$URL" '.items[] | select(.content.type=="Issue" and .content.url==$url) | .id' 2>/dev/null || echo "")
+            
+            if [ -z "$existing" ]; then
+              echo "Issue #$ISSUE not found in project, adding..."
+              existing=$(gh project item-add "$PROJECT" --owner "$OWNER" --url "$URL" --format json | jq -r '.id' 2>/dev/null || echo "")
+              if [ -n "$existing" ]; then
+                echo "Added Issue #$ISSUE to project: $existing"
+              else
+                echo "Failed to add Issue #$ISSUE to project"
+                continue
+              fi
+            else
+              echo "Found existing item for Issue #$ISSUE: $existing"
+            fi
+            
+            # Set Status field
+            if gh project item-edit "$PROJECT" --owner "$OWNER" --id "$existing" --field "Status" --name "$STATUS_NAME" 2>/dev/null; then
+              echo "✅ Updated Issue #$ISSUE status to: $STATUS_NAME"
+              
+              # Add comment to issue for transparency
+              gh issue comment "$ISSUE" --body "🤖 **自動ステータス更新**
+
+**変更内容**: Project Status → \`$STATUS_NAME\`
+**理由**: $REASON
+**PR**: #${{ github.event.pull_request.number }}
+
+この変更は PR の状態に基づいて自動的に実行されました。" 2>/dev/null || echo "Failed to add comment to Issue #$ISSUE"
+              
+            else
+              echo "❌ Failed to update Issue #$ISSUE status (Status field may not exist)"
+            fi
+          done
