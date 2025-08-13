@@ -1,9 +1,9 @@
 import { DockerRunner } from './docker-runner'
-import { 
-  CodeExecutionRequest, 
-  CodeExecutionResult, 
+import {
+  CodeExecutionRequest,
+  CodeExecutionResult,
   SUPPORTED_LANGUAGES,
-  ExecutionConfig 
+  ExecutionConfig,
 } from '../types/execution'
 
 export class ScoringService {
@@ -21,7 +21,7 @@ export class ScoringService {
     if (!langConfig) {
       throw new Error(`Unsupported language: ${request.language}`)
     }
-    
+
     // Create execution configuration
     const execConfig: ExecutionConfig = {
       image: langConfig.image,
@@ -33,7 +33,7 @@ export class ScoringService {
       user: 'nobody', // Non-root user
       workingDir: '/tmp',
       readOnlyRootFs: true,
-      environment: {}
+      environment: {},
     }
 
     try {
@@ -44,17 +44,16 @@ export class ScoringService {
         success: result.success,
         output: result.output,
         error: result.success ? null : result.error,
-        executionTime
+        executionTime,
       }
-
     } catch (error) {
       const executionTime = Date.now() - startTime
-      
+
       return {
         success: false,
         output: '',
         error: error instanceof Error ? error.message : 'Unknown execution error',
-        executionTime
+        executionTime,
       }
     }
   }

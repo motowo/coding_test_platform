@@ -11,7 +11,7 @@ export class DockerRunner {
   async runCode(config: ExecutionConfig): Promise<ContainerResult> {
     // Validate configuration for security
     this.validateConfig(config)
-    
+
     let containerId: string | null = null
     const startTime = Date.now()
 
@@ -30,8 +30,8 @@ export class DockerRunner {
           AutoRemove: false,
           NetworkMode: config.networkMode,
           Memory: config.memoryLimit,
-          CpuShares: config.cpuShares
-        }
+          CpuShares: config.cpuShares,
+        },
       } as any)
 
       containerId = (container as any).id
@@ -49,11 +49,11 @@ export class DockerRunner {
       })
 
       const result = await Promise.race([waitPromise, timeoutPromise])
-      
+
       // Get logs
       const logs = await dockerContainer.logs({
         stdout: true,
-        stderr: true
+        stderr: true,
       })
 
       const output = logs.toString('utf8')
@@ -67,9 +67,8 @@ export class DockerRunner {
         output: result.StatusCode === 0 ? output : '',
         error: result.StatusCode !== 0 ? output : '',
         exitCode: result.StatusCode,
-        executionTime
+        executionTime,
       }
-
     } catch (error) {
       // Clean up container on error
       if (containerId) {
@@ -89,7 +88,7 @@ export class DockerRunner {
           output: '',
           error: `Container execution timeout after ${config.timeout}ms`,
           exitCode: 124, // Timeout exit code
-          executionTime
+          executionTime,
         }
       }
 
@@ -124,12 +123,14 @@ export class DockerRunner {
     }
 
     // Check for dangerous environment variables
-    const dangerousVars = Object.keys(config.environment).filter(key => 
+    const dangerousVars = Object.keys(config.environment).filter((key) =>
       SECURITY_CONSTRAINTS.DANGEROUS_ENV_VARS.includes(key as never)
     )
-    
+
     if (dangerousVars.length > 0) {
-      throw new Error(`Security violation: Dangerous environment variables: ${dangerousVars.join(', ')}`)
+      throw new Error(
+        `Security violation: Dangerous environment variables: ${dangerousVars.join(', ')}`
+      )
     }
 
     // Validate read-only root filesystem requirement

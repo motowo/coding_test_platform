@@ -22,8 +22,8 @@ describe('Code Execution API', () => {
         payload: {
           language: 'javascript',
           code: 'console.log("Hello, World!")',
-          input: ''
-        }
+          input: '',
+        },
       })
 
       expect(response.statusCode).toBe(200)
@@ -32,7 +32,7 @@ describe('Code Execution API', () => {
         success: true,
         output: 'Hello, World!\n',
         error: null,
-        executionTime: expect.any(Number)
+        executionTime: expect.any(Number),
       })
       expect(result.executionTime).toBeLessThan(3000) // 3秒以内の実行要件
     })
@@ -44,8 +44,8 @@ describe('Code Execution API', () => {
         payload: {
           language: 'python',
           code: 'print("Hello, World!")',
-          input: ''
-        }
+          input: '',
+        },
       })
 
       expect(response.statusCode).toBe(200)
@@ -54,7 +54,7 @@ describe('Code Execution API', () => {
         success: true,
         output: 'Hello, World!\n',
         error: null,
-        executionTime: expect.any(Number)
+        executionTime: expect.any(Number),
       })
     })
 
@@ -76,8 +76,8 @@ describe('Code Execution API', () => {
               rl.close();
             });
           `,
-          input: 'test input'
-        }
+          input: 'test input',
+        },
       })
 
       expect(response.statusCode).toBe(200)
@@ -93,8 +93,8 @@ describe('Code Execution API', () => {
         payload: {
           language: 'javascript',
           code: 'throw new Error("Test error")',
-          input: ''
-        }
+          input: '',
+        },
       })
 
       expect(response.statusCode).toBe(200)
@@ -111,8 +111,8 @@ describe('Code Execution API', () => {
         payload: {
           language: 'javascript',
           code: 'while(true) { /* infinite loop */ }',
-          input: ''
-        }
+          input: '',
+        },
       })
 
       expect(response.statusCode).toBe(200)
@@ -126,9 +126,9 @@ describe('Code Execution API', () => {
         method: 'POST',
         url: '/api/v1/execute',
         payload: {
-          language: 'javascript'
+          language: 'javascript',
           // missing code field
-        }
+        },
       })
 
       expect(response.statusCode).toBe(400)
@@ -143,8 +143,8 @@ describe('Code Execution API', () => {
         payload: {
           language: 'unsupported-language',
           code: 'console.log("test")',
-          input: ''
-        }
+          input: '',
+        },
       })
 
       expect(response.statusCode).toBe(400)
@@ -166,8 +166,8 @@ describe('Code Execution API', () => {
             }
             console.log("Memory allocation completed");
           `,
-          input: ''
-        }
+          input: '',
+        },
       })
 
       expect(response.statusCode).toBe(200)
@@ -190,8 +190,8 @@ describe('Code Execution API', () => {
               console.log('Network access blocked:', err.message);
             });
           `,
-          input: ''
-        }
+          input: '',
+        },
       })
 
       expect(response.statusCode).toBe(200)

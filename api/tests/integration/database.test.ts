@@ -8,9 +8,9 @@ describe('Database Connection', () => {
     prisma = new PrismaClient({
       datasources: {
         db: {
-          url: process.env['DATABASE_URL']
-        }
-      }
+          url: process.env['DATABASE_URL'],
+        },
+      },
     })
   })
 
@@ -30,8 +30,8 @@ describe('Database Connection', () => {
       WHERE table_schema = 'public'
       ORDER BY table_name
     `
-    
-    const tableNames = tables.map(t => t.table_name)
+
+    const tableNames = tables.map((t) => t.table_name)
     expect(tableNames).toContain('users')
     expect(tableNames).toContain('problems')
     expect(tableNames).toContain('assessments')
