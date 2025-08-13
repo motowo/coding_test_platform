@@ -10,17 +10,12 @@ const executeRequestSchema = z.object({
   timeout: z.number().optional()
 })
 
-type ExecuteRequest = z.infer<typeof executeRequestSchema>
-
-interface ExecuteRequestHandler extends FastifyRequest {
-  body: ExecuteRequest
-}
 
 export async function executeRoutes(server: FastifyInstance) {
   const scoringService = new ScoringService()
 
   // Get supported languages
-  server.get('/api/v1/execute/languages', async (request: FastifyRequest, reply: FastifyReply) => {
+  server.get('/api/v1/execute/languages', async () => {
     const languages = scoringService.getSupportedLanguages()
     return {
       languages: languages.map(lang => ({
@@ -62,7 +57,7 @@ export async function executeRoutes(server: FastifyInstance) {
         }
       }
     }
-  }, async (request: ExecuteRequestHandler, reply: FastifyReply) => {
+  }, async (request: FastifyRequest, reply: FastifyReply) => {
     try {
       // Validate request body
       const validatedBody = executeRequestSchema.parse(request.body)

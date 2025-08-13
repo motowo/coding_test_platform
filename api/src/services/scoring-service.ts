@@ -17,11 +17,10 @@ export class ScoringService {
     const startTime = Date.now()
 
     // Validate language support
-    if (!SUPPORTED_LANGUAGES[request.language]) {
+    const langConfig = SUPPORTED_LANGUAGES[request.language]
+    if (!langConfig) {
       throw new Error(`Unsupported language: ${request.language}`)
     }
-
-    const langConfig = SUPPORTED_LANGUAGES[request.language]
     
     // Create execution configuration
     const execConfig: ExecutionConfig = {

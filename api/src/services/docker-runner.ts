@@ -22,9 +22,6 @@ export class DockerRunner {
         Cmd: config.command,
         AttachStdout: true,
         AttachStderr: true,
-        NetworkMode: config.networkMode,
-        Memory: config.memoryLimit,
-        CpuShares: config.cpuShares,
         User: config.user,
         WorkingDir: config.workingDir,
         Env: Object.entries(config.environment).map(([key, value]) => `${key}=${value}`),
@@ -35,12 +32,12 @@ export class DockerRunner {
           Memory: config.memoryLimit,
           CpuShares: config.cpuShares
         }
-      })
+      } as any)
 
-      containerId = container.id
+      containerId = (container as any).id
 
       // Get actual container instance from Docker daemon
-      const dockerContainer = this.docker.getContainer(containerId)
+      const dockerContainer = this.docker.getContainer(containerId!)
 
       // Start container
       await dockerContainer.start()
@@ -107,12 +104,12 @@ export class DockerRunner {
     }
 
     // Validate network mode
-    if (!SECURITY_CONSTRAINTS.ALLOWED_NETWORK_MODES.includes(config.networkMode as any)) {
+    if (!SECURITY_CONSTRAINTS.ALLOWED_NETWORK_MODES.includes(config.networkMode as never)) {
       throw new Error(`Security violation: Invalid network mode ${config.networkMode}`)
     }
 
     // Validate user
-    if (!SECURITY_CONSTRAINTS.ALLOWED_USERS.includes(config.user as any)) {
+    if (!SECURITY_CONSTRAINTS.ALLOWED_USERS.includes(config.user as never)) {
       throw new Error(`Security violation: Invalid user ${config.user}`)
     }
 
@@ -128,7 +125,7 @@ export class DockerRunner {
 
     // Check for dangerous environment variables
     const dangerousVars = Object.keys(config.environment).filter(key => 
-      SECURITY_CONSTRAINTS.DANGEROUS_ENV_VARS.includes(key)
+      SECURITY_CONSTRAINTS.DANGEROUS_ENV_VARS.includes(key as never)
     )
     
     if (dangerousVars.length > 0) {
@@ -142,6 +139,6 @@ export class DockerRunner {
   }
 
   isImageSafe(image: string): boolean {
-    return SECURITY_CONSTRAINTS.ALLOWED_IMAGES.includes(image)
+    return SECURITY_CONSTRAINTS.ALLOWED_IMAGES.includes(image as never)
   }
 }

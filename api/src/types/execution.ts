@@ -59,22 +59,6 @@ export const SUPPORTED_LANGUAGES: Record<string, LanguageConfig> = {
     timeout: 5000,
     memoryLimit: 128 * 1024 * 1024, // 128MB
     cpuShares: 512
-  },
-  java: {
-    name: 'Java',
-    image: 'openjdk:11-alpine',
-    command: (code: string) => ['java', '-cp', '/tmp', 'Main'],
-    timeout: 10000,
-    memoryLimit: 256 * 1024 * 1024, // 256MB (Java needs more memory)
-    cpuShares: 512
-  },
-  go: {
-    name: 'Go',
-    image: 'golang:1.19-alpine',
-    command: (code: string) => ['go', 'run', '/tmp/main.go'],
-    timeout: 10000,
-    memoryLimit: 128 * 1024 * 1024, // 128MB
-    cpuShares: 512
   }
 }
 
@@ -88,8 +72,6 @@ export const SECURITY_CONSTRAINTS = {
   DANGEROUS_ENV_VARS: ['PATH', 'LD_LIBRARY_PATH', 'HOME', 'USER', 'SHELL'],
   ALLOWED_IMAGES: [
     'node:18-alpine',
-    'python:3.11-alpine', 
-    'openjdk:11-alpine',
-    'golang:1.19-alpine'
+    'python:3.11-alpine'
   ]
 } as const
