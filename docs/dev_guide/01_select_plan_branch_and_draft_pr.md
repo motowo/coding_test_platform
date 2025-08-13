@@ -19,6 +19,7 @@
 ## 完了条件（DoD）
 - Project で対象 Issue を選定（Status=Todo）し、依存が解消されていることを確認
 - Issue に自分を assign し、Project の Status を In Progress に更新
+  - Project の Status を Todo から In Progress に変更してください。
 - ブランチを作成（命名規約に従う）し、初回 push を行う
 - ドラフトPRを作成し、PR本文に「開発計画（必須）」を記載
 
