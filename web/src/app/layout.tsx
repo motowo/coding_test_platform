@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import '@/styles/globals.css'
+import { ThemeProvider } from '@/components/theme-provider'
 
 const inter = Inter({
   subsets: ['latin'],
@@ -63,9 +64,14 @@ export default function RootLayout({
         <meta name="theme-color" content="#2563eb" />
       </head>
       <body className={`${inter.variable} font-sans antialiased`}>
-        <div className="relative min-h-screen bg-background">
-          {children}
-        </div>
+        <ThemeProvider
+          defaultTheme="system"
+          storageKey="skillgaug-ui-theme"
+        >
+          <div className="relative min-h-screen bg-background">
+            {children}
+          </div>
+        </ThemeProvider>
       </body>
     </html>
   )

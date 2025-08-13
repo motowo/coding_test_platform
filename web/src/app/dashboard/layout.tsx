@@ -24,12 +24,14 @@ import {
   Code,
   BarChart3
 } from 'lucide-react'
+import { ThemeToggle } from '@/components/theme-toggle'
 
 const navigation = [
   { name: 'ダッシュボード', href: '/dashboard', icon: Home },
   { name: '問題管理', href: '/dashboard/problems', icon: FileText },
   { name: 'ユーザー管理', href: '/dashboard/users', icon: Users },
   { name: '評価結果', href: '/dashboard/results', icon: BarChart3 },
+  { name: 'テーマテスト', href: '/theme-test', icon: Settings },
   { name: '設定', href: '/dashboard/settings', icon: Settings },
 ]
 
@@ -49,9 +51,9 @@ export default function DashboardLayout({
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white dark:bg-gray-800 shadow-sm border-b">
+      <header className="bg-card shadow-sm border-b">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center space-x-4">
             {/* Mobile menu button */}
@@ -71,8 +73,10 @@ export default function DashboardLayout({
             </Link>
           </div>
 
-          {/* User menu */}
-          <DropdownMenu>
+          {/* Theme toggle and User menu */}
+          <div className="flex items-center space-x-3">
+            <ThemeToggle />
+            <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
@@ -106,13 +110,14 @@ export default function DashboardLayout({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </header>
 
       <div className="flex">
         {/* Sidebar */}
         <aside className={`
-          fixed inset-y-0 left-0 z-50 w-64 bg-white dark:bg-gray-800 shadow-lg transform transition-transform duration-300 ease-in-out
+          fixed inset-y-0 left-0 z-50 w-64 bg-card shadow-lg transform transition-transform duration-300 ease-in-out
           md:relative md:translate-x-0 md:z-auto
           ${isSidebarOpen ? 'translate-x-0' : '-translate-x-full'}
         `}>
@@ -129,7 +134,7 @@ export default function DashboardLayout({
                       flex items-center px-3 py-2 rounded-md text-sm font-medium transition-colors
                       ${isActive
                         ? 'bg-primary text-primary-foreground'
-                        : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                        : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                       }
                     `}
                   >
