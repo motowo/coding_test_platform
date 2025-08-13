@@ -7,7 +7,7 @@ on:
         description: Issue number to sync
         required: true
       status:
-        description: Status to set (Todo/In Progress/Done)
+        description: Status to set (Todo/Progress/Done)
         required: true
         default: Todo
   issues:
@@ -43,8 +43,8 @@ jobs:
                 ;;
               labeled)
                 case "$label" in
-                  status/in-progress|status:in-progress|status-in-progress)
-                    echo "status=In Progress" >> "$GITHUB_OUTPUT" ;;
+                  status/progress|status:progress|status-progress|status/in-progress|status:in-progress|status-in-progress)
+                    echo "status=Progress" >> "$GITHUB_OUTPUT" ;;
                   status/todo|status:todo|status-todo)
                     echo "status=Todo" >> "$GITHUB_OUTPUT" ;;
                   status/done|status:done|status-done)
@@ -53,7 +53,7 @@ jobs:
                 esac
                 ;;
               assigned)
-                echo "status=In Progress" >> "$GITHUB_OUTPUT"
+                echo "status=Progress" >> "$GITHUB_OUTPUT"
                 ;;
               *) echo "status=" >> "$GITHUB_OUTPUT" ;;
             esac

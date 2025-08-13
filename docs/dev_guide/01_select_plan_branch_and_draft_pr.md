@@ -1,6 +1,6 @@
 # 01: タスク選定 → 計画作成 → ブランチ作成/ドラフトPR
 
-本章は、開発開始のトリガからドラフトPR作成までの実務手順を定義します。Project の Status は Todo → In Progress → Done で運用し、着手時に必ず In Progress へ更新します。
+本章は、開発開始のトリガからドラフトPR作成までの実務手順を定義します。Project の Status は Todo → Progress → Done で運用し、着手時に必ず Progress へ更新します。
 
 ## 目的
 - 正しい開始条件でタスクに着手し、依存未解決による手戻りを防ぐ
@@ -18,8 +18,8 @@
 
 ## 完了条件（DoD）
 - Project で対象 Issue を選定（Status=Todo）し、依存が解消されていることを確認
-- Issue に自分を assign し、Project の Status を In Progress に更新
-  - Project の Status を Todo から In Progress に変更してください。
+- Issue に自分を assign し、Project の Status を Progress に更新
+  - Project の Status を Todo から Progress に変更してください。
 - ブランチを作成（命名規約に従う）し、初回 push を行う
 - ドラフトPRを作成し、PR本文に「開発計画（必須）」を記載
 
@@ -71,7 +71,7 @@
 
 4) 担当割当と Status 更新
 - Issue に自分を assign
-- Project の `Status=In Progress` に変更（自動同期がある場合は適切にラベル/イベントを付与）
+- Project の `Status=Progress` に変更（自動同期がある場合は適切にラベル/イベントを付与）
 
 5) ブランチ作成
 - 命名規約: `feat/issue-<番号>-<短い説明>`、修正は `fix/…`、ドキュメントは `docs/…`
@@ -105,7 +105,7 @@
 - [ ] 対象Issueは Project で `Status=Todo`
 - [ ] `Depends on` の依存先はすべて Closed/Merged（不明なし）
 - [ ] 一括実行検討: 関連タスクがあれば統合実行を評価（効率化オプション）
-- [ ] Issue に assign 済み、Project を `In Progress` に更新（一括実行時は対象Issue全てを処理）
+- [ ] Issue に assign 済み、Project を `Progress` に更新（一括実行時は対象Issue全てを処理）
 - [ ] ブランチ作成（命名規約準拠、一括実行時は範囲を明記）
 - [ ] 初回コミット用 `.gitkeep` ファイル作成・コミット・プッシュ
 - [ ] ドラフトPR作成、PR本文へ「開発計画（必須）」と `Refs #<番号>` または `closes #<番号1> #<番号2>...` を記載

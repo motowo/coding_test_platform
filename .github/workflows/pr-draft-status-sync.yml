@@ -42,11 +42,11 @@ jobs:
           
           case "$ACTION" in
             opened|converted_to_draft)
-              echo 'status=In Progress' >> "$GITHUB_OUTPUT"
+              echo 'status=Progress' >> "$GITHUB_OUTPUT"
               echo "reason=PR $ACTION" >> "$GITHUB_OUTPUT"
               ;;
             ready_for_review)  
-              echo 'status=In Progress' >> "$GITHUB_OUTPUT"
+              echo 'status=Progress' >> "$GITHUB_OUTPUT"
               echo "reason=PR ready for review" >> "$GITHUB_OUTPUT"
               ;;
             closed)

@@ -56,7 +56,7 @@ EOF
           NUM=$(gh pr list --head "$GITHUB_REF_NAME" --json number -q '.[0].number')
           echo "pr=$NUM" >> "$GITHUB_OUTPUT"
 
-      - name: Link PR to Project and set Issue status (In Progress)
+      - name: Link PR to Project and set Issue status (Progress)
         if: steps.create.outputs.pr != ''
         env:
           GH_TOKEN: ${{ secrets.PROJECT_PAT }}
@@ -72,6 +72,6 @@ EOF
           if [ -z "$existing" ]; then
             existing=$(gh project item-add "$PROJECT" --owner "$OWNER" --url "$URL" --format json | jq -r '.id')
           fi
-          # Set Status to In Progress if field exists
-          gh project item-edit "$PROJECT" --owner "$OWNER" --id "$existing" --field "Status" --name "In Progress" || true
+          # Set Status to Progress if field exists
+          gh project item-edit "$PROJECT" --owner "$OWNER" --id "$existing" --field "Status" --name "Progress" || true
 
