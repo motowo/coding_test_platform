@@ -169,9 +169,13 @@ services:
         mkdir -p ./screenshots ./videos ./reports &&
         echo '[INIT] Output directories created' &&
         
-        # HTTP MCP サーバー起動
-        echo '[INIT] Starting HTTP MCP Server on port 3001...' &&
-        exec node mcp-playwright-http-server.js
+        # HTTPヘルスチェックエンドポイント起動（バックグラウンド）
+        echo '[INIT] Starting HTTP health endpoint...' &&
+        node /workspace/tests/mcp-playwright-http-server.js &
+        echo '[INIT] HTTP health endpoint available on port 3001' &&
+        
+        # コンテナを起動状態に維持（exec経由でStdio MCPサーバーを実行）
+        tail -f /dev/null
       "
 
 volumes:

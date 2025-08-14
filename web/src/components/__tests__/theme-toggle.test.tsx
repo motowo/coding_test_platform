@@ -182,9 +182,14 @@ describe('ThemeToggle', () => {
       
       const toggleButton = screen.getByRole('button', { name: /toggle theme/i })
       
-      // Button should have outline variant and sm size classes
-      // This will fail until proper styling is implemented
-      expect(toggleButton).toHaveClass('variant-outline', 'size-sm')
+      // Button should have outline variant styling
+      expect(toggleButton).toHaveClass('border')
+      expect(toggleButton).toHaveClass('border-input')
+      expect(toggleButton).toHaveClass('bg-background')
+      
+      // Small size classes (h-9 corresponds to size="sm")
+      expect(toggleButton).toHaveClass('h-9')
+      expect(toggleButton).toHaveClass('px-3')
     })
 
     test('ドロップダウンメニューが適切な位置に表示される', async () => {

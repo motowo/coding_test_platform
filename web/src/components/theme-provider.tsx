@@ -20,7 +20,7 @@ const initialState: ThemeProviderState = {
   setTheme: () => null,
 }
 
-const ThemeProviderContext = React.createContext<ThemeProviderState>(initialState)
+const ThemeProviderContext = React.createContext<ThemeProviderState | undefined>(undefined)
 
 export function ThemeProvider({
   children,
@@ -28,16 +28,18 @@ export function ThemeProvider({
   storageKey = "skillgaug-ui-theme",
   ...props
 }: ThemeProviderProps) {
-  const [theme, setTheme] = React.useState<Theme>(defaultTheme)
+  const [theme, setInternalTheme] = React.useState<Theme>(() => {
+    if (typeof window !== "undefined") {
+      const storedTheme = localStorage.getItem(storageKey) as Theme
+      return storedTheme || defaultTheme
+    }
+    return defaultTheme
+  })
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
     setMounted(true)
-    const storedTheme = localStorage.getItem(storageKey) as Theme
-    if (storedTheme) {
-      setTheme(storedTheme)
-    }
-  }, [storageKey])
+  }, [])
 
   React.useEffect(() => {
     if (!mounted) return
@@ -58,24 +60,25 @@ export function ThemeProvider({
     root.setAttribute("data-theme", theme)
   }, [theme, mounted])
 
-  const value = {
-    theme,
-    setTheme: (theme: Theme) => {
-      if (mounted) {
-        localStorage.setItem(storageKey, theme)
-      }
-      setTheme(theme)
+  const setTheme = React.useCallback(
+    (newTheme: Theme) => {
+      localStorage.setItem(storageKey, newTheme)
+      setInternalTheme(newTheme)
     },
-  }
+    [storageKey]
+  )
 
-  // Prevent flash during hydration
-  if (!mounted) {
-    return <div suppressHydrationWarning>{children}</div>
-  }
+  const value = React.useMemo(
+    () => ({
+      theme,
+      setTheme,
+    }),
+    [theme, setTheme]
+  )
 
   return (
     <ThemeProviderContext.Provider {...props} value={value}>
-      {children}
+      {mounted ? children : <div suppressHydrationWarning>{children}</div>}
     </ThemeProviderContext.Provider>
   )
 }
@@ -83,8 +86,16 @@ export function ThemeProvider({
 export const useTheme = () => {
   const context = React.useContext(ThemeProviderContext)
 
-  if (context === undefined)
+  if (context === undefined) {
+    // During SSR/SSG, return default values instead of throwing
+    if (typeof window === "undefined") {
+      return {
+        theme: "system" as Theme,
+        setTheme: () => {},
+      }
+    }
     throw new Error("useTheme must be used within a ThemeProvider")
+  }
 
   return context
 }

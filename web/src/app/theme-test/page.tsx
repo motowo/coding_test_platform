@@ -5,6 +5,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { ThemeToggle } from '@/components/theme-toggle'
 import { useTheme } from '@/components/theme-provider'
 
+export const dynamic = 'force-dynamic'
+
 export default function ThemeTestPage() {
   const { theme } = useTheme()
 
