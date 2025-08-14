@@ -19,12 +19,15 @@
       "command": "docker",
       "args": [
         "exec",
-        "-i",
+        "-i", 
         "skillgaug-playwright-mcp-1",
         "node",
-        "/workspace/tests/mcp-playwright-minimal.js"
+        "/workspace/tests/mcp-playwright-server.js"
       ],
-      "env": {}
+      "env": {
+        "NODE_ENV": "development",
+        "PLAYWRIGHT_BROWSERS_PATH": "/ms-playwright"
+      }
     }
   }
 }
