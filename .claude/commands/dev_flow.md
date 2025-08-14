@@ -163,6 +163,73 @@ gh pr checks --watch || true
 - 状態不整合（例: PRが無いのに 03 を指定） → 「無効な状態です。まず 01 を実行してください。」
 - 判定不能（自動判定） → 「状態の自動判定に失敗しました。実行したいステップ番号を指定してください。」
 
+### Flow完了時の進捗記録
+
+**重要**: 各Flowが完了するごとに、対象のIssueに以下の情報を記載してください。これは次のFlow実行時の判断材料として必須です。
+
+#### 記録方法
+
+1. **Issueコメントに進捗を記録**
+   ```bash
+   gh issue comment <ISSUE_NUMBER> --body "## Dev Flow進捗
+   
+   ✅ **Flow 01 完了** (2025-XX-XX)
+   - タスク選定: #XX (T-XXX: タスク名)  
+   - 開発計画作成: 完了
+   - ブランチ作成: feat/issue-XX-description
+   - ドラフトPR作成: #XX
+   
+   **次回**: Flow 02 (REDテスト作成) から再開
+   "
+   ```
+
+2. **Issue本文の更新** (必要に応じて)
+   ```bash
+   # 進捗セクションを追加
+   gh issue edit <ISSUE_NUMBER> --body "$(gh issue view <ISSUE_NUMBER> --json body -q .body)
+   
+   ## Dev Flow進捗
+   - [x] Flow 01: タスク選定→計画→ブランチ/PR作成
+   - [ ] Flow 02: REDテスト作成
+   - [ ] Flow 03: 実装 (GREEN→REFACTOR)
+   ..."
+   ```
+
+#### 記録すべき内容
+
+**Flow完了時に必須記録項目:**
+- **Flow番号と完了日時**
+- **実施内容の詳細** (ブランチ名、PR番号、作成したファイル等)
+- **次のFlow番号** (何から再開するか)
+- **課題や注意点** (もしあれば)
+
+**例）Flow別の記録テンプレート:**
+
+- **Flow 01完了時**: ブランチ名、ドラフトPR番号、開発計画の要点
+- **Flow 02完了時**: 作成したテストファイル、失敗確認済みのテスト項目
+- **Flow 03完了時**: 実装したファイル、通過したテスト、コミットハッシュ
+- **Flow 04完了時**: lint/typecheck/test結果、プッシュ済みコミット
+- **Flow 05完了時**: E2E実行結果、添付した成果物
+- **Flow 06完了時**: レビュー対応内容、修正コミット
+- **Flow 07完了時**: マージ日時、クローズ確認
+
+#### 確認方法
+
+再開時は以下のコマンドでIssueの進捗を確認：
+
+```bash
+# Issue進捗確認
+gh issue view <ISSUE_NUMBER> --comments
+
+# 現在のPR状態確認  
+gh pr view --json number,isDraft,headRefName,state
+
+# 最後のFlow判定
+gh issue view <ISSUE_NUMBER> --json body --jq '.body' | grep -A 10 "Dev Flow進捗"
+```
+
+この進捗記録により、複数日にまたがる開発や、中断・再開時の状況把握が正確に行えます。
+
 ### 関連コマンド
 
 - `/pr-create`, `/pr-review`, `/pr-auto-update`: PR 周辺の自動化

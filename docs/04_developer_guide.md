@@ -119,7 +119,7 @@
 - 開始の宣言
   - トリガー: Project の `Status=Todo`（または運用上の表記 `TODO`）の Issue のみ着手対象とする
   - 担当を割り当て（assign）
-  - 着手直後に Project の `Status=In Progress` へ更新
+  - 着手直後に Project の `Status=Progress` へ更新
   - Issue本文のチェックリスト（タスク）を見直し、抜けがあれば追記・分割（サブIssueを作成し親Issueにリンク）
   - ブランチ作成→初回 push（ドラフトPR自動作成が有効な場合）。無効時は手動でドラフトPRを作成
 - ブランチ命名（Issue番号を必須に含める）
@@ -144,7 +144,7 @@
   - 関連だが別問題は新規Issueを作成し、当該PRや元Issueからリンク
 
 #### 7.2.1 実装・コミット・プッシュのタイミング
-- 実装開始はドラフトPR作成後（Issue の `Status=In Progress` を維持）
+- 実装開始はドラフトPR作成後（Issue の `Status=Progress` を維持）
 - 小さな単位でコミット（テスト/実装/リファクタ）。コミット本文に `refs #<issue-number>` を付与
 - ローカルで `lint`/`typecheck`/関連テストを実行し緑であることを確認
 - 最初に作成したテストを含む関連テストが緑になったらプッシュ（ドラフトPRを更新）
@@ -153,7 +153,7 @@
 ### 7.3 自動化（Actions 概要）
 - `ProjectV2: Add issues to roadmap`: Issueをユーザープロジェクト（ロードマップ）に自動追加
 - `ProjectV2: Sync status with issues`: Issueイベント（open/assign/label/close）に応じて Project の Status を更新
-- `PR: Auto create draft from branch`: ブランチPush時に、分岐規則に合致すればドラフトPRを自動作成し、関連Issueを In Progress に設定
+- `PR: Auto create draft from branch`: ブランチPush時に、分岐規則に合致すればドラフトPRを自動作成し、関連Issueを Progress に設定
 - PRテンプレート: `.github/pull_request_template.md`（関連Issue、タスク網羅性、計画外作業の明記を必須）
 - `Issues: Auto manage 'blocked' label by dependencies`: Issue本文の「Depends on: #…」や Issueリンクに基づき、依存が未完のタスクへ `blocked` ラベルを自動付与/解除（詳細: `docs/09_issue_automation.md`）
 
@@ -198,7 +198,7 @@
   - 未アサイン: `--assignee none`
   - 依存の判定は本文の「Depends on」を参照し、未完了が含まれるものは除外
 - 着手の宣言
-  - Issue に自分を assign し、必要なら `status/in-progress` を付与（Project の Status が In Progress に自動同期）
+  - Issue に自分を assign し、必要なら `status/progress` を付与（Project の Status が Progress に自動同期）
   - ブランチを `feat/issue-<番号>-<短い説明>` で作成し push（自動でドラフトPRが作成され、PR本文に `Refs #<番号>` が入る）
 
 変更/追加が発生した場合の運用
